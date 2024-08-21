@@ -12,7 +12,8 @@
   }
   ```
 */
-export default function Login() {
+
+const Login: React.FC = () => {
   return (
     <>
       {/*
@@ -108,4 +109,6 @@ export default function Login() {
       </div>
     </>
   );
-}
+};
+
+export default Login;

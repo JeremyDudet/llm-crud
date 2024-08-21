@@ -1,3 +1,4 @@
+// src/components/AppShell.tsx
 import {
   Disclosure,
   DisclosureButton,
@@ -8,6 +9,12 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  HomeIcon,
+  BookOpenIcon,
+  DocumentTextIcon,
+} from "@heroicons/react/24/solid";
+import { Link, useLocation } from "react-router-dom";
 
 const user = {
   name: "Tom Cook",
@@ -16,10 +23,9 @@ const user = {
     "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
 };
 const navigation = [
-  { name: "Dashboard", href: "#", current: true },
-  { name: "Team", href: "#", current: false },
-  { name: "Projects", href: "#", current: false },
-  { name: "Calendar", href: "#", current: false },
+  { name: "Home", href: "/", current: true },
+  { name: "Profile", href: "/profile", current: false },
+  { name: "Login", href: "/login", current: false },
 ];
 const userNavigation = [
   { name: "Your Profile", href: "#" },
@@ -31,7 +37,9 @@ function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(" ");
 }
 
-function AppShell() {
+function AppShell({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+
   return (
     <>
       <div className="min-h-full">
@@ -53,9 +61,9 @@ function AppShell() {
                 </div>
                 <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
                   {navigation.map((item) => (
-                    <a
+                    <Link
                       key={item.name}
-                      href={item.href}
+                      to={`${item.href}`}
                       aria-current={item.current ? "page" : undefined}
                       className={classNames(
                         item.current
@@ -65,7 +73,7 @@ function AppShell() {
                       )}
                     >
                       {item.name}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -98,12 +106,12 @@ function AppShell() {
                   >
                     {userNavigation.map((item) => (
                       <MenuItem key={item.name}>
-                        <a
-                          href={item.href}
+                        <Link
+                          to={`${item.href}`}
                           className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100"
                         >
                           {item.name}
-                        </a>
+                        </Link>
                       </MenuItem>
                     ))}
                   </MenuItems>
@@ -132,8 +140,8 @@ function AppShell() {
               {navigation.map((item) => (
                 <DisclosureButton
                   key={item.name}
-                  as="a"
-                  href={item.href}
+                  as={Link}
+                  to={item.href}
                   aria-current={item.current ? "page" : undefined}
                   className={classNames(
                     item.current
@@ -176,8 +184,8 @@ function AppShell() {
                 {userNavigation.map((item) => (
                   <DisclosureButton
                     key={item.name}
-                    as="a"
-                    href={item.href}
+                    as={Link}
+                    to={item.href}
                     className="block px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
                   >
                     {item.name}
@@ -198,10 +206,45 @@ function AppShell() {
           </header>
           <main>
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-              {/* Your content */}
+              {children}
             </div>
           </main>
         </div>
+        <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:static sm:hidden">
+          <div className="flex w-full">
+            <Link
+              to="/"
+              className={`flex-1 py-4 text-center ${
+                location.pathname === "/" ? "text-indigo-600" : "text-gray-600"
+              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200`}
+            >
+              <HomeIcon className="h-5 w-5 mx-auto mb-1" />
+              Home
+            </Link>
+            <Link
+              to="/library"
+              className={`flex-1 py-4 text-center ${
+                location.pathname === "/library"
+                  ? "text-indigo-600"
+                  : "text-gray-600"
+              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200 border-l border-r border-gray-200`}
+            >
+              <BookOpenIcon className="h-5 w-5 mx-auto mb-1" />
+              Library
+            </Link>
+            <Link
+              to="/records"
+              className={`flex-1 py-4 text-center ${
+                location.pathname === "/records"
+                  ? "text-indigo-600"
+                  : "text-gray-600"
+              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200`}
+            >
+              <DocumentTextIcon className="h-5 w-5 mx-auto mb-1" />
+              Records
+            </Link>
+          </div>
+        </footer>
       </div>
     </>
   );
