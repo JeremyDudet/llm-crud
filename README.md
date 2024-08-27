@@ -9,11 +9,11 @@
 ## Tech Stack
 
 1. Frontend:
-   - React SPA using Vite for fast development and building
+   - React SPA using Vite
    - Redux Toolkit for client-side state management
    - React Query for server-state management and data fetching
 2. Backend:
-   - Existing Express.js server
+   - Express.js server
 3. Real-time Updates:
    - Initially using React Query's polling mechanism
    - Potential future integration of WebSockets for true real-time updates

@@ -1,8 +1,9 @@
 // src/pages/index.tsx
-import AppShell from "@/components/AppShell";
+import AppShell from "@/components/AppShell.tsx";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/store/store.ts";
+import { RootState } from "@/redux/store.ts";
 import { increment } from "@/features/counter/counterSlice";
+import VoiceInput from "@/components/VoiceInput.tsx";
 
 function Counter() {
   const count = useSelector((state: RootState) => state.counter.value);
@@ -22,6 +23,7 @@ const Home: React.FC = () => {
       <div>
         <h1>Home</h1>
         <Counter />
+        <VoiceInput />
       </div>
     </AppShell>
   );

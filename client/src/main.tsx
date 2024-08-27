@@ -2,56 +2,24 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 // Import your css
-import "./index.css";
+import "./styles/index.css";
 // Import your store
-import { store } from "./store/store";
+import { store } from "./redux/store";
 import { Provider as StoreProvider } from "react-redux";
 // Import your query client
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 // Import your pages/routes
-import Home from "./pages/index";
-import Login from "./pages/Login/index";
-import Profile from "./pages/Profile/index";
-import NotFound from "./pages/NotFound/index";
-import Library from "./pages/Library/index";
-import Records from "./pages/Records/index";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import AppRouter from "./routes";
 
 const queryClient = new QueryClient();
-
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Home />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: "/login",
-    element: <Login />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: "/library",
-    element: <Library />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: "/records",
-    element: <Records />,
-    errorElement: <NotFound />,
-  },
-  {
-    path: "/profile",
-    element: <Profile />,
-    errorElement: <NotFound />,
-  },
-]);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <StoreProvider store={store}>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <AppRouter />
+        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </StoreProvider>
   </React.StrictMode>
