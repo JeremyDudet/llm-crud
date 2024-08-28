@@ -1,3 +1,7 @@
+// routes/AppRouter.tsx
+// Function: Define main routing configuration.
+// Expected Output: Router component with route definitions.
+
 import Home from "../pages/index";
 import Login from "../pages/Login/index";
 import Profile from "../pages/Profile/index";

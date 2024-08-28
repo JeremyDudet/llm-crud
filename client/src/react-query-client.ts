@@ -1,5 +1,8 @@
 // react-query-client.ts
 
+// Function: Set up React Query client.
+// Expected Output: Configured QueryClient instance.
+
 import { QueryClient } from "@tanstack/react-query";
 
 // Create a QueryClient instance with default options

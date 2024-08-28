@@ -64,8 +64,8 @@
 │ ├── react-app-env.d.ts # React environment types
 │ └── index.ts # Barrel file to export types
 │
-├── /utils
-│ ├── [utility].ts # General utility functions
+├── /lib
+│ ├── [utils].ts # General utility functions
 │ └── index.ts # Barrel file to export utilities
 │
 ├── App.tsx # Main application component

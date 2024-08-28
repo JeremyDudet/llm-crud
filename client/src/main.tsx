@@ -10,7 +10,7 @@ import { Provider as StoreProvider } from "react-redux";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 // Import your pages/routes
-import AppRouter from "./routes";
+import AppRouter from "./routes/AppRouter";
 
 const queryClient = new QueryClient();
 
