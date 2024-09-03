@@ -22,6 +22,7 @@ interface Payload {
   email: string;
   role: string;
   isEmailVerified: boolean;
+  name: string; // Add this line
 }
 
 interface UserState {
