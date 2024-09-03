@@ -1,12 +1,12 @@
-// src/store/index.ts
 import { configureStore } from "@reduxjs/toolkit";
-import counterReducer from "../features/counter/counterSlice";
+import userReducer from "../features/user/userSlice";
 
 export const store = configureStore({
   reducer: {
-    counter: counterReducer,
+    user: userReducer,
     // Add other reducers here as needed
   },
+  devTools: process.env.NODE_ENV !== "production",
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

@@ -9,7 +9,7 @@ export class UserService {
     password: string
   ): Promise<User> {
     const hashedPassword = await bcrypt.hash(password, 10);
-    return User.create({ username, email, password: hashedPassword });
+    return User.create({ username, email, password_hash: hashedPassword });
   }
 
   async getUser(id: number): Promise<User | null> {

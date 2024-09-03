@@ -1,4 +1,4 @@
-import { umzug } from "./migrationSetup";
+import { umzug } from "./migrationSetup.js";
 
 async function createMigration() {
   const name = process.argv[2];

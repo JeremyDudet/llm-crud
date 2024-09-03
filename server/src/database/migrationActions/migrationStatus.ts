@@ -1,7 +1,7 @@
 // src/database/migrationStatus.ts
-import { umzug } from "./migrationSetup";
+import { umzug } from "./migrationSetup.js";
 
-async function migrationStatus() {
+export const migrationStatus = async () => {
   const pending = await umzug.pending();
   const executed = await umzug.executed();
 
@@ -14,6 +14,9 @@ async function migrationStatus() {
   console.log(
     `\nTotal: ${executed.length} executed, ${pending.length} pending`
   );
-}
+};
 
-migrationStatus().catch(console.error);
+// If this is meant to be run as a script
+if (import.meta.url === `file://${process.argv[1]}`) {
+  migrationStatus().catch(console.error);
+}

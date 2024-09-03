@@ -1,3 +1,4 @@
+// src/database/migrationSetup.ts
 import { Sequelize } from "sequelize";
 import { Umzug, SequelizeStorage } from "umzug";
 import path from "path";

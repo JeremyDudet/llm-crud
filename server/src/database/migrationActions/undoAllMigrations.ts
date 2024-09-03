@@ -1,4 +1,4 @@
-import { umzug } from "./migrationSetup";
+import { umzug } from "./migrationSetup.js";
 
 async function undoAllMigrations() {
   await umzug.down({ to: 0 });
