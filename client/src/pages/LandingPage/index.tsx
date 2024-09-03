@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,74 +12,122 @@ import {
   X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { currentUserEmail } = useSelector((state: RootState) => state.user);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <header className="px-4 lg:px-6 h-16 flex items-center bg-white shadow-sm sticky top-0 z-50">
+      <header className="px-4 lg:px-6 h-16 flex items-center justify-between bg-white shadow-sm sticky top-0 z-50">
         <Link className="flex items-center justify-center" to="#">
           <Coffee className="h-6 w-6 text-indigo-500" />
           <span className="ml-2 text-xl font-bold text-gray-900">
             CafeTrack
           </span>
         </Link>
-        <div className="ml-auto flex items-center">
-          <Link to="/login">
-            <Button
-              variant="default"
-              className="mr-8 hidden sm:inline-flex bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              Login / Register
-            </Button>
-          </Link>
-          <button className="lg:hidden" onClick={toggleMenu}>
-            {isMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-        <nav
-          className={`${
-            isMenuOpen ? "flex" : "hidden"
-          } lg:flex absolute lg:relative top-16 lg:top-0 left-0 right-0 flex-col lg:flex-row items-center bg-white lg:bg-transparent pb-4 lg:pb-0 shadow-md lg:shadow-none lg:ml-auto gap-4 lg:gap-6`}
-        >
+
+        <nav className="hidden lg:flex items-center space-x-8">
           <Link
             className="text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
             to="#features"
-            onClick={toggleMenu}
           >
             Features
           </Link>
           <Link
             className="text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
             to="#how-it-works"
-            onClick={toggleMenu}
           >
             How It Works
           </Link>
           <Link
             className="text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
             to="#testimonials"
-            onClick={toggleMenu}
           >
             Testimonials
           </Link>
-          <Link to="/login" className="w-[90%]">
+          {currentUserEmail ? (
+            <Link to="/dashboard">
+              <Button
+                variant="default"
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                {currentUserEmail}
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button
+                variant="default"
+                className="bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Login / Register
+              </Button>
+            </Link>
+          )}
+        </nav>
+
+        <button className="lg:hidden" onClick={toggleMenu}>
+          {isMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+      </header>
+
+      {/* Mobile menu */}
+      <nav
+        className={`${
+          isMenuOpen ? "flex" : "hidden"
+        } lg:hidden absolute top-16 left-0 right-0 flex-col items-center bg-white pb-4 shadow-md`}
+      >
+        <Link
+          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+          to="#features"
+          onClick={toggleMenu}
+        >
+          Features
+        </Link>
+        <Link
+          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+          to="#how-it-works"
+          onClick={toggleMenu}
+        >
+          How It Works
+        </Link>
+        <Link
+          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+          to="#testimonials"
+          onClick={toggleMenu}
+        >
+          Testimonials
+        </Link>
+        {currentUserEmail ? (
+          <Link to="/dashboard" className="w-full px-4 py-2">
             <Button
               variant="default"
-              className="sm:hidden w-full bg-indigo-600 text-white hover:bg-indigo-700"
+              className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+            >
+              {currentUserEmail}
+            </Button>
+          </Link>
+        ) : (
+          <Link to="/login" className="w-full px-4 py-2">
+            <Button
+              variant="default"
+              className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
             >
               Login / Register
             </Button>
           </Link>
-        </nav>
-      </header>
+        )}
+      </nav>
+
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-indigo-50 to-white">
           <div className="container px-4 md:px-6 mx-auto">

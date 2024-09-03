@@ -3,6 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "../apiClient";
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  // Add other properties as needed
+}
+
 interface CreateUserData {
   name: string;
   email: string;
@@ -19,56 +26,45 @@ interface UpdateUserData {
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<User, Error, CreateUserData>(
-    async (userData) => {
+  return useMutation<User, Error, CreateUserData>({
+    mutationFn: async (userData) => {
       const { data } = await apiClient.post<User>("/users", userData);
       return data;
     },
-    {
-      onSuccess: () => {
-        // Invalidate and refetch users list
-        queryClient.invalidateQueries(["users"]);
-      },
-    }
-  );
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
 };
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<User, Error, UpdateUserData>(
-    async (userData) => {
+  return useMutation<User, Error, UpdateUserData>({
+    mutationFn: async (userData) => {
       const { data } = await apiClient.put<User>(
         `/users/${userData.id}`,
         userData
       );
       return data;
     },
-    {
-      onSuccess: (data) => {
-        // Update the user in the cache
-        queryClient.setQueryData(["user", data.id], data);
-        // Invalidate and refetch users list
-        queryClient.invalidateQueries(["users"]);
-      },
-    }
-  );
+    onSuccess: (data) => {
+      queryClient.setQueryData(["user", data.id], data);
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
 };
 
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<void, Error, number>(
-    async (userId) => {
+  return useMutation<void, Error, number>({
+    mutationFn: async (userId) => {
       await apiClient.delete(`/users/${userId}`);
     },
-    {
-      onSuccess: (_, userId) => {
-        // Remove the user from the cache
-        queryClient.removeQueries(["user", userId]);
-        // Invalidate and refetch users list
-        queryClient.invalidateQueries(["users"]);
-      },
-    }
-  );
+    onSuccess: (_, userId) => {
+      queryClient.removeQueries({ queryKey: ["user", userId] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
 };

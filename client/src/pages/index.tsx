@@ -10,7 +10,7 @@ const Home: React.FC = () => {
   return (
     <AppShell>
       <div>
-        <h1>{user.currentUser?.username}</h1>
+        <h1>{user.currentUserName}</h1>
         <VoiceInput />
       </div>
     </AppShell>

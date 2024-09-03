@@ -13,6 +13,7 @@ interface User {
   role: string;
   isEmailVerified: boolean;
   token: string;
+  name: string;
 }
 
 interface Payload {
@@ -72,6 +73,7 @@ const userSlice = createSlice({
       console.log("setUser reducer called", action.payload);
       state.currentUserId = action.payload.id;
       state.currentUserEmail = action.payload.email;
+      state.currentUserName = action.payload.name;
       state.isLoading = false;
       state.error = null;
       state.role = action.payload.role;
@@ -110,6 +112,7 @@ const userSlice = createSlice({
       .addCase(fetchUserData.fulfilled, (state, action) => {
         state.currentUserId = action.payload.id;
         state.currentUserEmail = action.payload.email;
+        state.currentUserName = action.payload.name;
         state.role = action.payload.role;
         state.isEmailVerified = action.payload.isEmailVerified;
         state.isLoading = false;

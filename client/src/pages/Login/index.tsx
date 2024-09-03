@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import AppShell from "../../components/AppShell";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../../api/apiClient";
 import { useDispatch } from "react-redux";
@@ -17,7 +16,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { error, isLoading } = useSelector((state: RootState) => state.user);
+  const { error } = useSelector((state: RootState) => state.user);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
