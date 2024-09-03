@@ -9,16 +9,11 @@ import {
   MenuItems,
 } from "@headlessui/react";
 import { Bars3Icon, BellIcon, XMarkIcon } from "@heroicons/react/24/outline";
-// import {
-//   HomeIcon,
-//   BookOpenIcon,
-//   DocumentTextIcon,
-// } from "@heroicons/react/24/solid";
 import { Link, useLocation } from "react-router-dom";
 import { useLogout } from "../hooks/useLogout";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
-
+import Footer from "./layout/footer";
 function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(" ");
 }
@@ -242,25 +237,20 @@ function AppShell({ children }: { children: React.ReactNode }) {
         </Disclosure>
 
         <div className="py-10">
-          <header>
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
-                {currentPath}
-              </h1>
-            </div>
-          </header>
           <main>
             <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>
         </div>
+
+        <Footer />
         {/* <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:static sm:hidden">
-          <div className="flex w-full">
-            <Link
-              to="/"
-              className={`flex-1 py-4 text-center ${
-                location.pathname === "/" ? "text-indigo-600" : "text-gray-600"
+            <div className="flex w-full">
+              <Link
+                to="/"
+                className={`flex-1 py-4 text-center ${
+                  location.pathname === "/" ? "text-indigo-600" : "text-gray-600"
               } hover:bg-gray-100 focus:outline-none focus:bg-gray-200`}
             >
               <HomeIcon className="h-5 w-5 mx-auto mb-1" />

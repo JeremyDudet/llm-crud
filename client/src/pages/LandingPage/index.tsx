@@ -83,52 +83,54 @@ export default function LandingPage() {
       {/* Mobile menu */}
       <nav
         className={`${
-          isMenuOpen ? "flex" : "hidden"
-        } lg:hidden absolute top-16 left-0 right-0 flex-col items-center bg-white pb-4 shadow-md`}
+          isMenuOpen ? "block" : "hidden"
+        } lg:hidden bg-white pb-4 shadow-md fixed top-16 left-0 right-0 z-40`}
       >
-        <Link
-          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
-          to="#features"
-          onClick={toggleMenu}
-        >
-          Features
-        </Link>
-        <Link
-          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
-          to="#how-it-works"
-          onClick={toggleMenu}
-        >
-          How It Works
-        </Link>
-        <Link
-          className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
-          to="#testimonials"
-          onClick={toggleMenu}
-        >
-          Testimonials
-        </Link>
-        {currentUserEmail ? (
-          <Link to="/dashboard" className="w-full px-4 py-2">
-            <Button
-              variant="default"
-              className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              {currentUserEmail}
-            </Button>
-          </Link>
-        ) : (
-          <Link to="/login" className="w-full px-4 py-2">
-            <Button
-              variant="default"
-              className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
-            >
-              Login / Register
-            </Button>
-          </Link>
-        )}
+        <div className="flex flex-col items-center">
+          <a
+            className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+            href="#features"
+            onClick={toggleMenu}
+          >
+            Features
+          </a>
+          <a
+            className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+            href="#how-it-works"
+            onClick={toggleMenu}
+          >
+            How It Works
+          </a>
+          <a
+            className="w-full text-center py-2 text-sm font-medium text-gray-600 hover:text-indigo-500 transition-colors"
+            href="#testimonials"
+            onClick={toggleMenu}
+          >
+            Testimonials
+          </a>
+          {currentUserEmail ? (
+            <Link to="/dashboard" className="w-full px-4 py-2">
+              <Button
+                variant="default"
+                className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                {currentUserEmail}
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login" className="w-full px-4 py-2">
+              <Button
+                variant="default"
+                className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
+              >
+                Login / Register
+              </Button>
+            </Link>
+          )}
+        </div>
       </nav>
 
-      <main className="flex-1">
+      <main className={`flex-1 ${isMenuOpen ? "pt-48" : ""}`}>
         <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-b from-indigo-50 to-white">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center space-y-4 text-center">
