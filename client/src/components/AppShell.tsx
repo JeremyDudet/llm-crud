@@ -55,13 +55,13 @@ function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <>
-      <div className="min-h-full">
+    <div className="min-h-screen flex flex-col">
+      <div className="max-w-3xl mx-auto w-full flex-grow">
         <Disclosure
           as="nav"
           className="sticky top-0 z-50 border-b border-gray-200 bg-white"
         >
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between">
               <div className="flex">
                 <Link to="/" className="flex flex-shrink-0 items-center">
@@ -239,52 +239,17 @@ function AppShell({ children }: { children: React.ReactNode }) {
           </DisclosurePanel>
         </Disclosure>
 
-        <div className="py-10">
-          <main>
-            <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-              {children}
-            </div>
-          </main>
-        </div>
-
-        <Footer />
-        {/* <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 sm:static sm:hidden">
-            <div className="flex w-full">
-              <Link
-                to="/"
-                className={`flex-1 py-4 text-center ${
-                  location.pathname === "/" ? "text-indigo-600" : "text-gray-600"
-              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200`}
-            >
-              <HomeIcon className="h-5 w-5 mx-auto mb-1" />
-              Home
-            </Link>
-            <Link
-              to="/library"
-              className={`flex-1 py-4 text-center ${
-                location.pathname === "/library"
-                  ? "text-indigo-600"
-                  : "text-gray-600"
-              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200 border-l border-r border-gray-200`}
-            >
-              <BookOpenIcon className="h-5 w-5 mx-auto mb-1" />
-              Library
-            </Link>
-            <Link
-              to="/records"
-              className={`flex-1 py-4 text-center ${
-                location.pathname === "/records"
-                  ? "text-indigo-600"
-                  : "text-gray-600"
-              } hover:bg-gray-100 focus:outline-none focus:bg-gray-200`}
-            >
-              <DocumentTextIcon className="h-5 w-5 mx-auto mb-1" />
-              Records
-            </Link>
-          </div>
-        </footer> */}
+        <main className="flex-grow">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-10">{children}</div>
+        </main>
       </div>
-    </>
+
+      <div className="sticky bottom-0 w-full border-t bg-background border-gray-300">
+        <div className="max-w-3xl mx-auto">
+          <Footer />
+        </div>
+      </div>
+    </div>
   );
 }
 

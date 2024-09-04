@@ -15,7 +15,7 @@ import {
 function Dashboard() {
   return (
     <AppShell>
-      <div className="flex flex-col min-h-screen bg-indigo-50 text-indigo-900">
+      <div className="flex flex-col min-h-screen text-indigo-900">
         <header className="p-4 bg-white shadow-md">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-indigo-600">CafeTrack</h1>
