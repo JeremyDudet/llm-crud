@@ -57,7 +57,10 @@ function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="min-h-full">
-        <Disclosure as="nav" className="border-b border-gray-200 bg-white">
+        <Disclosure
+          as="nav"
+          className="sticky top-0 z-50 border-b border-gray-200 bg-white"
+        >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 justify-between">
               <div className="flex">

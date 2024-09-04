@@ -92,11 +92,16 @@ export class AuthController {
     const { email } = req.body;
     try {
       await AuthService.resetPasswordRequest(email);
-      res.json({ message: "Password reset link sent to your email" });
+      res.json({
+        message:
+          "If an account with that email exists, a password reset link has been sent.",
+      });
     } catch (error) {
-      res
-        .status(400)
-        .json({ message: "Failed to send password reset link", error });
+      console.error("Password reset request error:", error);
+      res.status(500).json({
+        message: "An error occurred while processing your request.",
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -107,10 +112,13 @@ export class AuthController {
       if (success) {
         res.json({ message: "Password reset successful" });
       } else {
-        res.status(400).json({ message: "Failed to reset password" });
+        res.status(400).json({ message: "Invalid or expired reset token" });
       }
     } catch (error) {
-      res.status(500).json({ message: "Password reset failed", error });
+      console.error("Password reset error:", error);
+      res
+        .status(500)
+        .json({ message: "An error occurred while resetting the password." });
     }
   }
 

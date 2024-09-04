@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import User from "../database/models/User";
 import dotenv from "dotenv";
 import crypto from "crypto";
-
+import { sendPasswordResetEmail } from "../utils/emailService";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -107,18 +107,28 @@ export default class AuthService {
   }
 
   static async resetPasswordRequest(email: string): Promise<void> {
+    console.log("Attempting password reset for email:", email);
     const user = await User.findOne({ where: { email } });
-    if (!user) throw new Error("User not found");
+    if (!user) {
+      console.log("User not found for email:", email);
+      // Don't reveal that the user doesn't exist
+      return;
+    }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = Date.now() + 3600000; // 1 hour from now
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    console.log("Generated reset token:", resetToken);
 
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = new Date(resetTokenExpiry);
+    user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
+    console.log("User updated with reset token");
+
     // Send resetToken to the user's email
-    // This part should involve sending an email with a link to reset the password
+    await sendPasswordResetEmail(email, resetToken);
+    console.log("Password reset email sent");
   }
 
   static async resetPassword(

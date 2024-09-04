@@ -9,6 +9,7 @@ import NotFound from "../pages/NotFound/index";
 import CreateAccount from "../pages/CreateAccount/index";
 import PrivateRoute from "./PrivateRoute";
 import Dashboard from "../pages/Dashboard/index";
+import ForgotPassword from "../pages/ForgotPassword/index";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -25,6 +26,11 @@ const router = createBrowserRouter([
   {
     path: "/create-account",
     element: <CreateAccount />,
+    errorElement: <NotFound />,
+  },
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
     errorElement: <NotFound />,
   },
   {

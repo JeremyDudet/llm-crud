@@ -1,48 +1,58 @@
-import React, { useState, useRef } from "react";
+// src/components/VoiceInput.tsx
+import React, { useRef, useState } from "react";
+import { Button } from "./ui/button";
+import { useVoiceCommand } from "../hooks/useVoiceCommand";
 
 const VoiceInput: React.FC = () => {
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const {
+    isListening,
+    startListening,
+    stopListening,
+    processVoiceCommand,
+    isProcessing,
+    error,
+  } = useVoiceCommand();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
 
-  const startRecording = async () => {
+  const handleStartListening = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream);
-
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
-          chunksRef.current.push(event.data);
+          setAudioChunks((chunks) => [...chunks, event.data]);
         }
       };
-
-      mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setAudioBlob(audioBlob);
-        chunksRef.current = [];
+      mediaRecorderRef.current.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        await processVoiceCommand(audioBlob);
+        setAudioChunks([]);
       };
-
       mediaRecorderRef.current.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
+      startListening();
+    } catch (err) {
+      console.error("Error accessing microphone:", err);
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
+  const handleStopListening = () => {
+    if (mediaRecorderRef.current && isListening) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      stopListening();
     }
   };
 
   return (
     <div>
-      <button onClick={isRecording ? stopRecording : startRecording}>
-        {isRecording ? "Stop Recording" : "Start Recording"}
-      </button>
-      {audioBlob && <audio src={URL.createObjectURL(audioBlob)} controls />}
+      <Button
+        onClick={isListening ? handleStopListening : handleStartListening}
+        disabled={isProcessing}
+      >
+        {isListening ? "Stop Listening" : "Start Listening"}
+      </Button>
+      {isProcessing && <p>Processing voice command...</p>}
+      {error && <p>Error: {error.message}</p>}
     </div>
   );
 };

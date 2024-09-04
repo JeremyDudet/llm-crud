@@ -2,6 +2,7 @@
 import express from "express";
 import AuthController from "../controllers/AuthController";
 import { authenticateToken } from "../middleware/auth";
+import { sendPasswordResetEmail } from "../utils/emailService";
 
 const router = express.Router();
 
@@ -50,5 +51,18 @@ router.post("/refresh-token", AuthController.refreshToken);
 
 // Handle fetching current user data
 router.get("/me", authenticateToken, AuthController.getCurrentUser);
+
+router.post("/test-email", async (req, res) => {
+  try {
+    await sendPasswordResetEmail("test@example.com", "test-token");
+    res.json({
+      message: "Test email sent. Check server logs for preview URL.",
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Failed to send test email", error: error.message });
+  }
+});
 
 export default router;
