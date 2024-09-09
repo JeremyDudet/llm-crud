@@ -59,9 +59,10 @@ router.post("/test-email", async (req, res) => {
       message: "Test email sent. Check server logs for preview URL.",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to send test email", error: error.message });
+    res.status(500).json({
+      message: "Failed to send test email",
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 });
 
