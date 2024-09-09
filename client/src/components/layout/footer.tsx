@@ -125,8 +125,16 @@ export default function Footer() {
         console.log("Transcribed text:", response.data.text);
 
         if (response.data.text) {
-          setInputValue(response.data.text);
-          setIsTyping(response.data.text.length > 0);
+          const trimmedText = response.data.text.trim(); // Remove any leading/trailing whitespace
+          setInputValue(trimmedText);
+          setIsTyping(trimmedText.length > 0);
+          if (textareaRef.current) {
+            textareaRef.current.value = trimmedText;
+            // Manually trigger the input event to ensure React updates the state
+            textareaRef.current.dispatchEvent(
+              new Event("input", { bubbles: true })
+            );
+          }
           adjustTextareaHeight();
         } else {
           setError("Transcription failed: Empty response from server");
@@ -239,7 +247,7 @@ export default function Footer() {
           className="flex-grow bg-background max-h-[300px] overflow-y-auto w-full resize-none"
           style={{
             minHeight: "40px", // Set a minimum height
-            height: "40px", // Set initial height
+            height: "auto", // Allow height to grow
             maxHeight: "300px",
             overflowX: "hidden", // Hide horizontal scrollbar
             overflowY: "auto", // Show vertical scrollbar when needed

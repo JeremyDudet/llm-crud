@@ -5,6 +5,7 @@ import path from "path";
 import { setTimeout } from "timers/promises";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { Readable } from "stream";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,6 +13,7 @@ const __dirname = dirname(__filename);
 const openai = new OpenAI();
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 2000; // 2 seconds
+const MAX_CHUNK_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
 
 export const transcribeAudioService = async (
   audioBuffer: Buffer
@@ -24,62 +26,72 @@ export const transcribeAudioService = async (
     }
     console.log("Audio buffer size:", audioBuffer.length);
 
-    // Write buffer to a temporary file
-    tempFilePath = path.join(__dirname, "..", "..", "temp_audio.wav");
-    fs.writeFileSync(tempFilePath, audioBuffer);
-    console.log("Temporary file created:", tempFilePath);
+    let transcription = "";
+    let offset = 0;
 
-    let retries = 0;
-    while (retries < MAX_RETRIES) {
-      try {
-        const response = await openai.audio.transcriptions.create({
-          file: fs.createReadStream(tempFilePath),
-          model: "whisper-1",
-          response_format: "text",
-        });
+    while (offset < audioBuffer.length) {
+      const chunkSize = Math.min(MAX_CHUNK_SIZE, audioBuffer.length - offset);
+      const chunk = audioBuffer.slice(offset, offset + chunkSize);
 
-        console.log(
-          "OpenAI response received:",
-          JSON.stringify(response, null, 2)
-        );
+      const chunkStream = new Readable();
+      chunkStream.push(chunk);
+      chunkStream.push(null);
 
-        // Clean up the temporary file
-        fs.unlinkSync(tempFilePath);
+      let retries = 0;
+      while (retries < MAX_RETRIES) {
+        try {
+          const response = await openai.audio.transcriptions.create({
+            file: new File([chunk], "audio.mp3", { type: "audio/mpeg" }),
+            model: "whisper-1",
+            response_format: "text",
+          });
 
-        if (typeof response === "string") {
-          return response;
-        } else if (
-          response &&
-          typeof response === "object" &&
-          "text" in response
-        ) {
-          return response.text;
-        } else {
-          console.warn("Unexpected response format from OpenAI:", response);
-          return "";
-        }
-      } catch (error) {
-        if (error instanceof OpenAI.APIConnectionError) {
-          retries++;
           console.log(
-            `Connection error, retrying (${retries}/${MAX_RETRIES})...`
+            "OpenAI response received for chunk:",
+            JSON.stringify(response, null, 2)
           );
-          await setTimeout(RETRY_DELAY);
-        } else {
-          throw error;
+
+          if (typeof response === "string") {
+            transcription += response + " ";
+          } else if (
+            response &&
+            typeof response === "object" &&
+            "text" in response
+          ) {
+            transcription += response.text + " ";
+          } else {
+            console.warn("Unexpected response format from OpenAI:", response);
+          }
+
+          break; // Success, exit retry loop
+        } catch (error) {
+          if (error instanceof OpenAI.APIConnectionError) {
+            retries++;
+            console.log(
+              `Connection error, retrying chunk (${retries}/${MAX_RETRIES})...`
+            );
+            await setTimeout(RETRY_DELAY);
+          } else {
+            throw error;
+          }
         }
       }
+
+      if (retries === MAX_RETRIES) {
+        throw new Error(
+          `Failed to transcribe audio chunk after ${MAX_RETRIES} retries`
+        );
+      }
+
+      offset += chunkSize;
     }
-    throw new Error(`Failed to transcribe audio after ${MAX_RETRIES} retries`);
+
+    return transcription.trim();
   } catch (error) {
     console.error("OpenAI transcription error:", error);
     if (error instanceof Error) {
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
-    }
-    if (tempFilePath && fs.existsSync(tempFilePath)) {
-      fs.unlinkSync(tempFilePath);
-      console.log("Temporary file cleaned up after error");
     }
     throw new Error(
       "Failed to transcribe audio: " +
