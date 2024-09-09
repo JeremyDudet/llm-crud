@@ -55,7 +55,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="flex flex-col">
       <div className="max-w-3xl mx-auto w-full flex-grow">
         <Disclosure
           as="nav"
@@ -244,7 +244,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      <div className="sticky bottom-0 w-full border-t bg-background border-gray-300">
+      <div className="fixed bottom-0 w-full border-t bg-background border-gray-300">
         <div className="max-w-3xl mx-auto">
           <Footer />
         </div>

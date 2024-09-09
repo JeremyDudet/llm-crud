@@ -1,11 +1,11 @@
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
-
 import { SparklesIcon } from "lucide-react";
+
 function Dashboard() {
   return (
     <AppShell>
-      <div className="flex flex-col min-h-screen text-indigo-900">
+      <div className="flex flex-col text-indigo-900">
         <main className="flex-grow p-4 space-y-6">
           <section>
             <h3 className="text-xl font-semibold mb-3 text-indigo-800 flex items-center">

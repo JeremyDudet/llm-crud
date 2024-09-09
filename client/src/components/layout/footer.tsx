@@ -1,6 +1,6 @@
 // src/components/layout/footer.tsx
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Mic, Headphones, Send } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import apiClient from "@/api/apiClient";
@@ -32,7 +32,7 @@ export default function Footer() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const textareaRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -40,14 +40,17 @@ export default function Footer() {
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = "auto";
-      const newHeight = Math.min(textarea.scrollHeight, 300);
-      textarea.style.height = `${newHeight}px`;
+      textarea.style.height = "40px"; // Reset to default height
+      const scrollHeight = textarea.scrollHeight;
+      textarea.style.height = scrollHeight + "px";
+      if (scrollHeight > 300) {
+        textarea.style.height = "300px";
+      }
     }
   }, []);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
       setInputValue(newValue);
       setIsTyping(newValue.length > 0);
@@ -228,15 +231,20 @@ export default function Footer() {
           <Plus className="h-4 w-4" />
         </Button>
 
-        <Input
+        <Textarea
           ref={textareaRef}
           value={inputValue}
           onChange={handleInputChange}
           placeholder="Message"
-          className="flex-grow bg-background max-h-[300px] overflow-y-auto"
+          className="flex-grow bg-background max-h-[300px] overflow-y-auto w-full resize-none"
           style={{
-            height: "auto",
+            minHeight: "40px", // Set a minimum height
+            height: "40px", // Set initial height
             maxHeight: "300px",
+            overflowX: "hidden", // Hide horizontal scrollbar
+            overflowY: "auto", // Show vertical scrollbar when needed
+            whiteSpace: "pre-wrap", // Preserve line breaks and wrap text
+            wordWrap: "break-word", // Break long words if necessary
           }}
         />
         {isTyping ? (
