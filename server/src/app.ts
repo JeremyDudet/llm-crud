@@ -3,10 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
-import { sequelize } from "./database/config";
+import { db } from "./database";
+import { users } from "./database/schema";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
 import transcribeAudioRoutes from "./routes/transcribeAudio";
+import voiceCommandRoutes from "./routes/voiceCommandRoutes";
 
 dotenv.config();
 
@@ -19,21 +21,23 @@ app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
-// Database synchronization
-sequelize
-  .sync()
+// Database connection check
+db.select()
+  .from(users)
+  .limit(1)
   .then(() => {
-    console.log("Database synchronized");
+    console.log("Database connected successfully");
   })
-  .catch((err) => {
-    console.error("Error synchronizing database:", err);
+  .catch((error) => {
+    console.error("Database connection failed:", error);
+    process.exit(1);
   });
 
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/transcribe-audio", transcribeAudioRoutes);
-
+app.use("/api/voice-commands", voiceCommandRoutes);
 // Basic route for testing
 app.get("/", (req, res) => {
   res.send("Hello, World!");

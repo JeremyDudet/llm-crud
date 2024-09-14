@@ -1,10 +1,13 @@
 // src/services/AuthService.ts
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
-import User from "../database/models/User";
+import { db } from "../database";
+import { users } from "../database/schema";
+import { eq, gt, and } from "drizzle-orm";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../utils/emailService";
+
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -17,22 +20,28 @@ if (!JWT_SECRET) {
 export default class AuthService {
   private static readonly SALT_ROUNDS = 10;
 
-  static async register(email: string, password: string): Promise<User | null> {
+  static async register(email: string, password: string): Promise<any> {
     try {
-      const existingUser = await User.findOne({ where: { email } });
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .get();
       if (existingUser) {
         throw new Error("Email already in use");
       }
 
-      console.log("Registering with password:", password);
       const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
-      console.log("Generated hash during registration:", hashedPassword);
+      const newUser = await db
+        .insert(users)
+        .values({
+          email,
+          passwordHash: hashedPassword,
+        })
+        .returning()
+        .get();
 
-      const user = await User.create({
-        email,
-        password_hash: hashedPassword,
-      });
-      return user;
+      return newUser;
     } catch (error) {
       console.error("Registration error:", error);
       throw new Error("Registration failed");
@@ -42,21 +51,19 @@ export default class AuthService {
   static async login(
     email: string,
     password: string
-  ): Promise<{ token: string; user: Partial<User> } | null> {
-    const user = await User.findOne({ where: { email } });
+  ): Promise<{
+    token: string;
+    user: Partial<typeof users.$inferSelect>;
+  } | null> {
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .get();
     if (!user) return null;
 
-    console.log("User found:", user);
-    console.log("Provided password:", password);
-    console.log("Stored password hash:", user.password_hash);
-
     try {
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.password_hash
-      );
-      console.log("Password comparison result:", isPasswordValid);
-
+      const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
       if (!isPasswordValid) return null;
 
       const token = jwt.sign(
@@ -65,7 +72,7 @@ export default class AuthService {
         { expiresIn: "12h" }
       );
 
-      const userData: Partial<User> = {
+      const userData: Partial<typeof users.$inferSelect> = {
         id: user.id,
         email: user.email,
         role: user.role,
@@ -92,73 +99,99 @@ export default class AuthService {
     oldPassword: string,
     newPassword: string
   ): Promise<boolean> {
-    const user = await User.findByPk(userId);
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .get();
     if (!user) return false;
 
     const isPasswordValid = await bcrypt.compare(
       oldPassword,
-      user.password_hash
+      user.passwordHash
     );
     if (!isPasswordValid) return false;
 
-    user.password_hash = await bcrypt.hash(newPassword, 10);
-    await user.save();
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(users)
+      .set({ passwordHash: newHashedPassword })
+      .where(eq(users.id, userId))
+      .run();
     return true;
   }
 
   static async resetPasswordRequest(email: string): Promise<void> {
-    console.log("Attempting password reset for email:", email);
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
-      console.log("User not found for email:", email);
-      // Don't reveal that the user doesn't exist
-      return;
-    }
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .get();
+    if (!user) return;
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-    console.log("Generated reset token:", resetToken);
+    await db
+      .update(users)
+      .set({
+        resetPasswordToken: resetToken,
+        resetPasswordExpires: resetTokenExpiry,
+      })
+      .where(eq(users.id, user.id))
+      .run();
 
-    user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = resetTokenExpiry;
-    await user.save();
-
-    console.log("User updated with reset token");
-
-    // Send resetToken to the user's email
     await sendPasswordResetEmail(email, resetToken);
-    console.log("Password reset email sent");
   }
 
   static async resetPassword(
     token: string,
     newPassword: string
   ): Promise<boolean> {
-    const user = await User.findOne({
-      where: {
-        resetPasswordToken: token,
-        resetPasswordExpires: { $gt: Date.now() },
-      },
-    });
+    const user = await db
+      .select()
+      .from(users)
+      .where(
+        and(
+          eq(users.resetPasswordToken, token),
+          gt(users.resetPasswordExpires, new Date())
+        )
+      )
+      .get();
+
     if (!user) return false;
 
-    user.password_hash = await bcrypt.hash(newPassword, 10);
-    user.resetPasswordToken = null;
-    user.resetPasswordExpires = null;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await db
+      .update(users)
+      .set({
+        passwordHash: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+      })
+      .where(eq(users.id, user.id))
+      .run();
+
     return true;
   }
 
   static async verifyEmail(token: string): Promise<boolean> {
-    const user = await User.findOne({
-      where: { emailVerificationToken: token },
-    });
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.emailVerificationToken, token))
+      .get();
     if (!user) return false;
 
-    user.isEmailVerified = true;
-    user.emailVerificationToken = null;
-    await user.save();
+    await db
+      .update(users)
+      .set({
+        isEmailVerified: true,
+        emailVerificationToken: null,
+      })
+      .where(eq(users.id, user.id))
+      .run();
+
     return true;
   }
 
@@ -166,8 +199,11 @@ export default class AuthService {
     const refreshToken = jwt.sign({ id: userId }, JWT_SECRET as string, {
       expiresIn: "7d",
     });
-    // Store the refresh token in the database
-    await User.update({ refreshToken }, { where: { id: userId } });
+    await db
+      .update(users)
+      .set({ refreshToken })
+      .where(eq(users.id, userId))
+      .run();
     return refreshToken;
   }
 
@@ -178,9 +214,14 @@ export default class AuthService {
       const decoded = jwt.verify(refreshToken, JWT_SECRET as string) as {
         id: number;
       };
-      const user = await User.findOne({
-        where: { id: decoded.id, refreshToken },
-      });
+      const user = await db
+        .select()
+        .from(users)
+        .where(
+          and(eq(users.id, decoded.id), eq(users.refreshToken, refreshToken))
+        )
+        .get();
+
       if (!user) return null;
 
       const accessToken = jwt.sign(

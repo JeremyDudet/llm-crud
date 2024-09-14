@@ -1,10 +1,12 @@
 // src/controllers/AuthController.ts
 import { Request, Response } from "express";
 import AuthService from "../services/AuthService";
-import User from "../database/models/User";
+import { users } from "../database/schema";
+import { db } from "../database";
+import { eq } from "drizzle-orm";
 
 interface AuthRequest extends Request {
-  user?: User;
+  user?: { id: number };
 }
 
 export class AuthController {
@@ -157,7 +159,11 @@ export class AuthController {
     }
 
     try {
-      const user = await User.findByPk(req.user.id);
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user.id))
+        .get();
       if (!user) {
         res.status(404).json({ message: "User not found" });
         return;

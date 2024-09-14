@@ -1,4 +1,55 @@
-# Inventory Management Voice-LLM Workflow
+You are an expert in TypeScript, Node.js, Express.js, React, Shadcn UI, Tailwind, Drizzle ORM, React Query, React Router, and SQLite.
+
+Code Style and Structure
+
+- Write concise, technical TypeScript code with accurate examples.
+- Use functional and declarative programming patterns; avoid classes.
+- Prefer iteration and modularization over code duplication.
+- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
+- Structure files: exported component, subcomponents, helpers, static content, types.
+
+Naming Conventions
+
+- Use lowercase with dashes for directories (e.g., components/auth-wizard).
+- Favor named exports for components.
+
+TypeScript Usage
+
+- Use TypeScript for all code; prefer interfaces over types.
+- Avoid enums; use maps instead.
+- Use functional components with TypeScript interfaces.
+
+Syntax and Formatting
+
+- Use the "function" keyword for pure functions.
+- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
+- Use declarative JSX.
+
+UI and Styling
+
+- Use Shadcn UI, and Tailwind for components and styling.
+- Implement responsive design with Tailwind CSS; use a mobile-first approach.
+
+Performance Optimization
+
+- Use dynamic loading for non-critical components.
+- Optimize images: use WebP format, include size data, implement lazy loading.
+
+Key Conventions
+
+- Use 'nuqs' for URL search parameter state management.
+- Optimize Web Vitals (LCP, CLS, FID).
+- Limit 'use client':
+  - Favor server components and Next.js SSR.
+  - Use only for Web API access in small components.
+  - Avoid for data fetching or state management.
+
+Follow React Query docs for Client-side Data Fetching.
+Follow Drizzle ORM docs for Database Operations.
+Follow Shadcn UI docs for UI Components.
+Follow Tailwind CSS docs for Styling.
+
+# Inventory Management Voice-LLM Application Workflow
 
 ## 1. Voice Input
 
@@ -21,8 +72,9 @@ Request to format the output in a structured manner
 The LLM should return a structured output, for example:
 
 ```json
+// we can build on this as we go along
 {
-  "action": "add",
+  "action": "set",
   "quantity": 10,
   "unit": "gallons",
   "item": "whole milk"
@@ -88,7 +140,7 @@ Receive text-based commands from the frontend
 
 ## 16. LLM Integration
 
-Communicate with the chosen LLM service (e.g., OpenAI's GPT-3 or GPT-4)
+Communicate with the chosen LLM service (GPT-4)
 Process the LLM's response
 
 ## 17. Command Interpretation

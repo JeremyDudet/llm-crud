@@ -32,6 +32,7 @@ export default function Footer() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -136,6 +137,9 @@ export default function Footer() {
             );
           }
           adjustTextareaHeight();
+          if (trimmedText) {
+            sendCommandToBackend(trimmedText);
+          }
         } else {
           setError("Transcription failed: Empty response from server");
         }
@@ -193,13 +197,28 @@ export default function Footer() {
   }, []);
 
   const handleSend = useCallback(() => {
-    // Implement send functionality
-    console.log("Sending message:", inputValue);
-    // Reset the textarea
-    setInputValue("");
-    setIsTyping(false);
-    adjustTextareaHeight();
+    if (inputValue.trim()) {
+      sendCommandToBackend(inputValue.trim());
+      setInputValue("");
+      setIsTyping(false);
+      adjustTextareaHeight();
+    }
   }, [inputValue, adjustTextareaHeight]);
+
+  const sendCommandToBackend = async (command: string) => {
+    setIsProcessing(true);
+    try {
+      const response = await apiClient.post("/api/voice-commands", { command });
+      console.log("Command processed:", response.data);
+      // You might want to dispatch an action here to update the Redux store
+      // or use React Query to invalidate and refetch relevant data
+    } catch (error) {
+      console.error("Error sending command to backend:", error);
+      setError("Failed to process command. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="w-full px-4 pb-4 bg-background">
@@ -261,8 +280,13 @@ export default function Footer() {
             size="icon"
             className="shrink-0"
             onClick={handleSend}
+            disabled={isProcessing}
           >
-            <Send className="h-4 w-4" />
+            {isProcessing ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         ) : (
           <>

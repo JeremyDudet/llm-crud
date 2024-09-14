@@ -1,34 +1,34 @@
-// src/services/UserService.ts
-import User from "../database/models/User";
+import { db } from "../database";
+import { users } from "../database/schema";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
 export class UserService {
-  async createUser(
-    username: string,
-    email: string,
-    password: string
-  ): Promise<User> {
+  async createUser(email: string, password: string): Promise<any> {
     const hashedPassword = await bcrypt.hash(password, 10);
-    return User.create({ username, email, password_hash: hashedPassword });
+    return db
+      .insert(users)
+      .values({
+        email,
+        passwordHash: hashedPassword,
+      })
+      .returning();
   }
 
-  async getUser(id: number): Promise<User | null> {
-    return User.findByPk(id);
+  async getUser(id: number) {
+    return db.select().from(users).where(eq(users.id, id)).get();
   }
 
-  async getAllUsers(): Promise<User[]> {
-    return User.findAll();
+  async getAllUsers() {
+    return db.select().from(users).all();
   }
 
-  async updateUser(
-    id: number,
-    updates: Partial<User>
-  ): Promise<[number, User[]]> {
-    return User.update(updates, { where: { id }, returning: true });
+  async updateUser(id: number, updates: Partial<typeof users.$inferInsert>) {
+    return db.update(users).set(updates).where(eq(users.id, id)).run();
   }
 
-  async deleteUser(id: number): Promise<number> {
-    return User.destroy({ where: { id } });
+  async deleteUser(id: number) {
+    return db.delete(users).where(eq(users.id, id)).run();
   }
 }
 

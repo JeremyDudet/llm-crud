@@ -1,9 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import userReducer from "../features/user/userSlice";
-
+import commandStackReducer from "../features/commandStack/commandStackSlice";
 export const store = configureStore({
   reducer: {
     user: userReducer,
+    commandStack: commandStackReducer,
     // Add other reducers here as needed
   },
   devTools: process.env.NODE_ENV !== "production",

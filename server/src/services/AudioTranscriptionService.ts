@@ -1,7 +1,5 @@
 // server/src/services/AudioTranscriptionService.ts
 import OpenAI from "openai";
-import fs from "fs";
-import path from "path";
 import { setTimeout } from "timers/promises";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -58,7 +56,7 @@ export const transcribeAudioService = async (
             typeof response === "object" &&
             "text" in response
           ) {
-            transcription += response.text + " ";
+            transcription += response.text;
           } else {
             console.warn("Unexpected response format from OpenAI:", response);
           }
