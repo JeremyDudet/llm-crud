@@ -5,4 +5,5 @@ export interface InterpretedCommand {
   quantity?: number;
   unit?: string;
   processed?: boolean;
+  rawCommand: string;
 }

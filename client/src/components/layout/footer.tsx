@@ -92,12 +92,18 @@ export default function Footer() {
     }
   }, [adjustTextareaHeight]);
 
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
+
   const processVoiceCommand = useCallback(
     async (audioBlob: Blob) => {
       setIsTranscribing(true);
       setError(null);
       try {
         console.log("Audio blob size:", audioBlob.size);
+
+        if (audioBlob.size > MAX_FILE_SIZE) {
+          throw new Error("File size exceeds 25 MB limit");
+        }
 
         const formData = new FormData();
         formData.append("audio", audioBlob, "voice_command.wav");
@@ -111,15 +117,11 @@ export default function Footer() {
           );
         }
 
-        const response = await apiClient.post(
-          "/api/transcribe-audio",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
+        const response = await apiClient.post("/api/voice-commands", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
 
         console.log("Server response:", response);
         console.log("Response data:", response.data);
@@ -161,13 +163,15 @@ export default function Footer() {
         setIsTranscribing(false);
       }
     },
-    [adjustTextareaHeight]
+    [adjustTextareaHeight, MAX_FILE_SIZE]
   );
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: "audio/wav",
+      });
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {

@@ -1,7 +1,7 @@
 import AppShell from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
+import CommandStack from "@/components/commandStack/CommandStack";
 import { SparklesIcon } from "lucide-react";
-import CommandStack from "@/features/commandStack/CommandStack";
 
 function Dashboard() {
   return (

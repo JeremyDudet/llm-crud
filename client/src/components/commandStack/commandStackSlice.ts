@@ -27,9 +27,17 @@ const commandStackSlice = createSlice({
         command.processed = true;
       }
     },
+    updateCommand(state, action: PayloadAction<InterpretedCommand>) {
+      const index = state.commands.findIndex(
+        (command) => command.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.commands[index] = action.payload;
+      }
+    },
   },
 });
 
-export const { addCommand, removeCommand, executeCommand } =
+export const { addCommand, removeCommand, executeCommand, updateCommand } =
   commandStackSlice.actions;
 export default commandStackSlice.reducer;

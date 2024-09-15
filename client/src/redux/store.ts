@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import userReducer from "../features/user/userSlice";
-import commandStackReducer from "../features/commandStack/commandStackSlice";
+import commandStackReducer from "../components/commandStack/commandStackSlice";
 export const store = configureStore({
   reducer: {
     user: userReducer,

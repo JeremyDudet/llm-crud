@@ -7,7 +7,6 @@ import { db } from "./database";
 import { users } from "./database/schema";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
-import transcribeAudioRoutes from "./routes/transcribeAudio";
 import voiceCommandRoutes from "./routes/voiceCommandRoutes";
 
 dotenv.config();
@@ -36,8 +35,8 @@ db.select()
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/transcribe-audio", transcribeAudioRoutes);
 app.use("/api/voice-commands", voiceCommandRoutes);
+
 // Basic route for testing
 app.get("/", (req, res) => {
   res.send("Hello, World!");

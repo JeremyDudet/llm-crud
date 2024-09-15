@@ -1,99 +1,63 @@
 // server/src/services/AudioTranscriptionService.ts
+// This file contains the AudioTranscriptionService class which is used to transcribe audio files.
 import OpenAI from "openai";
-import { setTimeout } from "timers/promises";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-import { Readable } from "stream";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import fs from "fs/promises";
+import path from "path";
+import { createReadStream } from "fs";
 
 const openai = new OpenAI();
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 2000; // 2 seconds
-const MAX_CHUNK_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
 
 export const transcribeAudioService = async (
   audioBuffer: Buffer
 ): Promise<string> => {
-  let tempFilePath = "";
+  let tempFilePath: string | null = null;
+
   try {
     if (!process.env.OPENAI_API_KEY) {
-      console.error("Error: OpenAI API key is not set");
       throw new Error("OpenAI API key is not set");
     }
-    console.log("Audio buffer size:", audioBuffer.length);
 
-    let transcription = "";
-    let offset = 0;
+    // Create a temporary file name with .wav extension
+    const tempFileName = `temp_audio_${Date.now()}.wav`;
+    tempFilePath = path.join(__dirname, "..", "..", "temp", tempFileName);
 
-    while (offset < audioBuffer.length) {
-      const chunkSize = Math.min(MAX_CHUNK_SIZE, audioBuffer.length - offset);
-      const chunk = audioBuffer.slice(offset, offset + chunkSize);
+    // Ensure the temp directory exists
+    await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
 
-      const chunkStream = new Readable();
-      chunkStream.push(chunk);
-      chunkStream.push(null);
+    // Write the audio buffer to a temporary file
+    await fs.writeFile(tempFilePath, audioBuffer);
 
-      let retries = 0;
-      while (retries < MAX_RETRIES) {
-        try {
-          const response = await openai.audio.transcriptions.create({
-            file: new File([chunk], "audio.mp3", { type: "audio/mpeg" }),
-            model: "whisper-1",
-            response_format: "text",
-          });
+    console.log(`Temporary audio file created: ${tempFilePath}`);
 
-          console.log(
-            "OpenAI response received for chunk:",
-            JSON.stringify(response, null, 2)
-          );
+    // Call the OpenAI transcription API with the file path
+    const response = await openai.audio.transcriptions.create({
+      file: createReadStream(tempFilePath),
+      model: "whisper-1",
+    });
 
-          if (typeof response === "string") {
-            transcription += response + " ";
-          } else if (
-            response &&
-            typeof response === "object" &&
-            "text" in response
-          ) {
-            transcription += response.text;
-          } else {
-            console.warn("Unexpected response format from OpenAI:", response);
-          }
+    console.log("OpenAI response received:", JSON.stringify(response, null, 2));
 
-          break; // Success, exit retry loop
-        } catch (error) {
-          if (error instanceof OpenAI.APIConnectionError) {
-            retries++;
-            console.log(
-              `Connection error, retrying chunk (${retries}/${MAX_RETRIES})...`
-            );
-            await setTimeout(RETRY_DELAY);
-          } else {
-            throw error;
-          }
-        }
-      }
-
-      if (retries === MAX_RETRIES) {
-        throw new Error(
-          `Failed to transcribe audio chunk after ${MAX_RETRIES} retries`
-        );
-      }
-
-      offset += chunkSize;
+    if (typeof response.text === "string") {
+      return response.text.trim();
+    } else {
+      throw new Error("Unexpected response format from OpenAI");
     }
-
-    return transcription.trim();
   } catch (error) {
     console.error("OpenAI transcription error:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
     throw new Error(
-      "Failed to transcribe audio: " +
-        (error instanceof Error ? error.message : "Unknown error")
+      `Failed to transcribe audio: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
     );
+  } finally {
+    // Clean up the temporary file
+    if (tempFilePath) {
+      try {
+        await fs.unlink(tempFilePath);
+        console.log(`Temporary audio file deleted: ${tempFilePath}`);
+      } catch (unlinkError) {
+        console.error("Error deleting temporary file:", unlinkError);
+      }
+    }
   }
 };

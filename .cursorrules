@@ -1,29 +1,10 @@
-You are an expert in TypeScript, Node.js, Express.js, React, Shadcn UI, Tailwind, Drizzle ORM, React Query, React Router, and SQLite.
-
-Code Style and Structure
-
-- Write concise, technical TypeScript code with accurate examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., isLoading, hasError).
-- Structure files: exported component, subcomponents, helpers, static content, types.
-
-Naming Conventions
-
-- Use lowercase with dashes for directories (e.g., components/auth-wizard).
-- Favor named exports for components.
+You are an expert in TypeScript, Node.js, Express.js, React, Redux, Shadcn UI, Tailwind CSS, Drizzle ORM, React Query, React Router, and SQLite.
 
 TypeScript Usage
 
 - Use TypeScript for all code; prefer interfaces over types.
 - Avoid enums; use maps instead.
 - Use functional components with TypeScript interfaces.
-
-Syntax and Formatting
-
-- Use the "function" keyword for pure functions.
-- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
-- Use declarative JSX.
 
 UI and Styling
 
@@ -35,148 +16,39 @@ Performance Optimization
 - Use dynamic loading for non-critical components.
 - Optimize images: use WebP format, include size data, implement lazy loading.
 
-Key Conventions
+Client-side data fetching
 
-- Use 'nuqs' for URL search parameter state management.
-- Optimize Web Vitals (LCP, CLS, FID).
-- Limit 'use client':
-  - Favor server components and Next.js SSR.
-  - Use only for Web API access in small components.
-  - Avoid for data fetching or state management.
+- Use React Query for client-side data fetching.
+- Use Redux for client-side state management.
+
+The client is organized into the following order:
+
+src/
+
+- src/api
+  - /mutations
+  - /queries
+- src/components/
+- src/features/
+- src/hooks/
+- src/lib/
+  - /utils
+- src/pages/
+- src/styles/
+  The express backend is organized into the following order:
+
+src/
+
+- src/controllers/
+- src/database/
+- src/middleware/
+- src/routes/
+- src/services/
+- src/utils/
+- src/app.ts
 
 Follow React Query docs for Client-side Data Fetching.
+Follow React Redux for client-side state management.
 Follow Drizzle ORM docs for Database Operations.
 Follow Shadcn UI docs for UI Components.
 Follow Tailwind CSS docs for Styling.
-
-# Inventory Management Voice-LLM Application Workflow
-
-## 1. Voice Input
-
-User says: "We have 10 gallons of whole milk"
-
-## 2. Speech-to-Text Conversion
-
-Convert the spoken words to text.
-
-## 3. LLM Processing
-
-Send the text to the LLM with a prompt that includes:
-
-Context about being an inventory management system
-Instructions to identify key elements: action (add/update), quantity, unit, and item
-Request to format the output in a structured manner
-
-## 4. LLM Output
-
-The LLM should return a structured output, for example:
-
-```json
-// we can build on this as we go along
-{
-  "action": "set",
-  "quantity": 10,
-  "unit": "gallons",
-  "item": "whole milk"
-}
-```
-
-## 5. Backend Processing
-
-Validate the LLM output
-Check if the item exists in the inventory
-If it exists, update the quantity
-If it doesn't exist, create a new entry
-
-## 6. Database Operation
-
-Perform the appropriate CRUD operation based on the processed information
-
-## 7. Confirmation
-
-Generate a confirmation message, e.g., "Added 10 gallons of whole milk to the inventory"
-
-## 8. (Optional) Text-to-Speech
-
-Convert the confirmation message back to speech
-
-## 9. Error Handling Scenarios
-
-Ambiguous input: "We have milk" (missing quantity)
-Unknown item: "We have 5 boxes of widgets" (item not in database)
-Incorrect unit: "We have 10 pounds of milk"
-
-Handling Complex Scenarios
-
-Multiple items: "We have 10 gallons of whole milk and 5 loaves of bread"
-Removal: "Remove 3 gallons of whole milk from inventory"
-Stock check: "How much whole milk do we have?"
-Low stock alert: "Alert me when we have less than 5 gallons of whole milk"
-
-## 10. Voice-LLM CRUD System Architecture
-
-Frontend (React SPA)
-
-## 11. Voice Input Capture
-
-Implement using the Web Speech API or a similar library
-Responsible for capturing user's voice and converting it to text
-
-## 12. User Interface
-
-Display feedback, confirmations, and results to the user
-Optionally, implement text-to-speech for responses
-
-## 13. API Communication
-
-Send processed voice commands to the backend
-Receive and display responses from the backend
-
-## 14. Backend (Express.js)
-
-## 15. Voice Command API Endpoint
-
-Receive text-based commands from the frontend
-
-## 16. LLM Integration
-
-Communicate with the chosen LLM service (GPT-4)
-Process the LLM's response
-
-## 17. Command Interpretation
-
-Parse the LLM's output into actionable instructions
-
-## 18. CRUD Operation Execution
-
-Perform the interpreted CRUD operations on the database
-
-## 19. Response Generation
-
-Create user-friendly responses based on the operation results
-
-## 20. Existing Authentication and Authorization
-
-Leverage current auth system to secure voice-based operations
-
-## 21. Shared Responsibilities
-
-## 22. Error Handling
-
-Frontend: Display user-friendly error messages
-Backend: Generate detailed error information
-
-## 23. Logging and Monitoring
-
-Frontend: Log user interactions and any client-side issues
-Backend: Log detailed operation information and any server-side issues
-
-## 24. External Services
-
-## 25. LLM Service (e.g., OpenAI)
-
-Hosted externally, communicated with from the backend
-
-## 26. Database
-
-Existing database setup, interacted with from the backend
