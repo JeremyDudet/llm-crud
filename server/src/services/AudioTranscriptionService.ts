@@ -1,11 +1,17 @@
 // server/src/services/AudioTranscriptionService.ts
-// This file contains the AudioTranscriptionService class which is used to transcribe audio files.
+// This file receives the audio buffer from the client, transcribes it, and returns the transcription
 import OpenAI from "openai";
-import fs from "fs/promises";
+import fsPromises from "fs/promises";
+import fs from "fs";
 import path from "path";
-import { createReadStream } from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const openai = new OpenAI();
+
+// Get the current file path and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export const transcribeAudioService = async (
   audioBuffer: Buffer
@@ -18,24 +24,52 @@ export const transcribeAudioService = async (
     }
 
     // Create a temporary file name with .wav extension
-    const tempFileName = `temp_audio_${Date.now()}.wav`;
+    const tempFileName = `temp_audio_${Date.now()}.webm`;
     tempFilePath = path.join(__dirname, "..", "..", "temp", tempFileName);
 
     // Ensure the temp directory exists
-    await fs.mkdir(path.dirname(tempFilePath), { recursive: true });
+    await fsPromises.mkdir(path.dirname(tempFilePath), { recursive: true });
 
     // Write the audio buffer to a temporary file
-    await fs.writeFile(tempFilePath, audioBuffer);
+    await fsPromises.writeFile(tempFilePath, audioBuffer);
 
     console.log(`Temporary audio file created: ${tempFilePath}`);
 
-    // Call the OpenAI transcription API with the file path
-    const response = await openai.audio.transcriptions.create({
-      file: createReadStream(tempFilePath),
-      model: "whisper-1",
+    console.log(`Received audio buffer size: ${audioBuffer.length} bytes`);
+    const stats = await fsPromises.stat(tempFilePath);
+    console.log(`Written file size: ${stats.size} bytes`);
+
+    if (stats.size === 0) {
+      throw new Error("Audio file is empty");
+    }
+
+    console.log(`Attempting to transcribe file: ${tempFilePath}`);
+    console.log(
+      `File exists: ${await fsPromises
+        .access(tempFilePath)
+        .then(() => true)
+        .catch(() => false)}`
+    );
+
+    console.log(
+      "OpenAI API Key:",
+      process.env.OPENAI_API_KEY ? "Set" : "Not set"
+    );
+    console.log("Temp file path:", tempFilePath);
+    console.log("Audio buffer length:", audioBuffer.length);
+
+    const fileStream = fs.createReadStream(tempFilePath);
+    fileStream.on("error", (error) => {
+      console.error("Error reading file:", error);
     });
 
-    console.log("OpenAI response received:", JSON.stringify(response, null, 2));
+    const response = await openai.audio.transcriptions.create({
+      file: fileStream,
+      model: "whisper-1",
+      response_format: "json",
+      language: "en",
+    });
+    console.log(`Transcription response:`, JSON.stringify(response, null, 2));
 
     if (typeof response.text === "string") {
       return response.text.trim();
@@ -53,7 +87,7 @@ export const transcribeAudioService = async (
     // Clean up the temporary file
     if (tempFilePath) {
       try {
-        await fs.unlink(tempFilePath);
+        await fsPromises.unlink(tempFilePath);
         console.log(`Temporary audio file deleted: ${tempFilePath}`);
       } catch (unlinkError) {
         console.error("Error deleting temporary file:", unlinkError);

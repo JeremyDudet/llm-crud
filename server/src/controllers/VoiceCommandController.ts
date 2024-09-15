@@ -1,4 +1,5 @@
 // src/controllers/VoiceCommandController.ts
+// this controller will receive the audio file from the client, transcribe it, and then interpret the command
 import { Request, Response } from "express";
 import { transcribeAudioService } from "../services/AudioTranscriptionService";
 import { interpretCommand } from "../services/LLMService";
@@ -15,8 +16,9 @@ export async function processCommand(
       return;
     }
 
-    // Transcribe the audio
+    console.log("Received audio buffer size:", audioBuffer.length);
     const transcription = await transcribeAudioService(audioBuffer);
+    console.log("Transcription result:", transcription);
 
     // Use OpenAI API to interpret the command
     try {

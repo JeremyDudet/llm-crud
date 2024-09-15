@@ -106,8 +106,8 @@ export default function Footer() {
         }
 
         const formData = new FormData();
-        formData.append("audio", audioBlob, "voice_command.wav");
-        formData.append("fileExtension", "wav");
+        formData.append("audio", audioBlob, "voice_command.webm");
+        formData.append("fileExtension", "webm");
 
         console.log("FormData entries:");
         for (const [key, value] of formData.entries()) {
@@ -170,7 +170,8 @@ export default function Footer() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: "audio/wav",
+        mimeType: "audio/webm",
+        audioBitsPerSecond: 128000,
       });
       audioChunksRef.current = [];
 
@@ -180,13 +181,21 @@ export default function Footer() {
 
       mediaRecorderRef.current.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/wav",
+          type: "audio/webm",
         });
         await processVoiceCommand(audioBlob);
       };
 
       mediaRecorderRef.current.start();
       setIsListening(true);
+      setTimeout(() => {
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === "recording"
+        ) {
+          console.log("Minimum recording duration reached");
+        }
+      }, 2000); // 2 seconds minimum recording time
     } catch (error) {
       console.error("Error starting recording:", error);
       // Handle the error (e.g., show a notification to the user)
