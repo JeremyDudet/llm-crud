@@ -1,7 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { RootState } from "@/redux/store";
 import apiClient from "@/api/apiClient";
-import { executeCommand } from "./commandStackSlice";
+import { executeCommand } from "../../features/commandStackSlice";
 
 export const executeCommandStack = createAsyncThunk(
   "commandStack/execute",

@@ -1,8 +1,8 @@
 // src/controllers/VoiceCommandController.ts
 // this controller will receive the audio file from the client, transcribe it, and then interpret the command
 import { Request, Response } from "express";
-import { transcribeAudioService } from "../services/AudioTranscriptionService";
-import { interpretCommand } from "../services/LLMService";
+import { transcribeAudio } from "../services/AudioTranscriptionService";
+import { interpretCommand } from "../services/TextInterpretationService";
 
 export async function processCommand(
   req: Request,
@@ -17,36 +17,15 @@ export async function processCommand(
     }
 
     console.log("Received audio buffer size:", audioBuffer.length);
-    const transcription = await transcribeAudioService(audioBuffer);
+    const transcription = await transcribeAudio(audioBuffer);
     console.log("Transcription result:", transcription);
 
-    // Use OpenAI API to interpret the command
-    try {
-      const interpretedCommand = await interpretCommand(transcription);
+    const interpretedCommand = await interpretCommand(transcription);
 
-      // Return both the transcription and the interpreted command
-      res.json({
-        transcription,
-        interpretedCommand,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.startsWith("Unclear command:")) {
-          res.status(400).json({ error: error.message, transcription });
-        } else {
-          console.error("Error interpreting command:", error);
-          res.status(500).json({
-            error: "Internal server error",
-            details: error.message,
-            transcription,
-          });
-        }
-      } else {
-        res
-          .status(500)
-          .json({ error: "Unknown error occurred", transcription });
-      }
-    }
+    res.json({
+      transcription,
+      interpretedCommand,
+    });
   } catch (error) {
     console.error("Error processing voice command:", error);
     res.status(500).json({

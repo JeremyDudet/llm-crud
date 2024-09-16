@@ -96,6 +96,7 @@ export default function Footer() {
   }, [adjustTextareaHeight]);
 
   const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
+  const MIN_AUDIO_SIZE = 1024; // Minimum size of 1KB
 
   const sendCommandToBackend = useCallback(
     async (command: string) => {
@@ -121,6 +122,10 @@ export default function Footer() {
       setError(null);
       try {
         console.log("Audio blob size:", audioBlob.size);
+
+        if (audioBlob.size < MIN_AUDIO_SIZE) {
+          throw new Error("Audio recording too short");
+        }
 
         if (audioBlob.size > MAX_FILE_SIZE) {
           throw new Error("File size exceeds 25 MB limit");

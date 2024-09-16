@@ -13,9 +13,7 @@ const openai = new OpenAI();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const transcribeAudioService = async (
-  audioBuffer: Buffer
-): Promise<string> => {
+export const transcribeAudio = async (audioBuffer: Buffer): Promise<string> => {
   let tempFilePath: string | null = null;
 
   try {
@@ -66,16 +64,10 @@ export const transcribeAudioService = async (
     const response = await openai.audio.transcriptions.create({
       file: fileStream,
       model: "whisper-1",
-      response_format: "json",
       language: "en",
     });
     console.log(`Transcription response:`, JSON.stringify(response, null, 2));
-
-    if (typeof response.text === "string") {
-      return response.text.trim();
-    } else {
-      throw new Error("Unexpected response format from OpenAI");
-    }
+    return response.text.trim();
   } catch (error) {
     console.error("OpenAI transcription error:", error);
     throw new Error(
