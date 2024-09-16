@@ -1,78 +1,94 @@
-import { useState, useRef, useEffect } from "react";
-import { ChevronDown, ChevronUp, Mic, Edit2, Check, X } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import {
+  removeCommand,
+  updateCommand,
+  executeCommand,
+  cycleCommandForward,
+  cycleCommandBackward,
+} from "@/features/commandStackSlice";
+import { ChevronDown, ChevronUp, Mic, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
 
-type Command = {
-  id: string;
-  text: string;
-  details: string;
-  transcription: string;
-};
-
-export default function Component() {
-  const [commands, setCommands] = useState<Command[]>([
-    {
-      id: "1",
-      text: "Update Stevia & Paper Wrap",
-      details: "0.5 box stevia, 10 packs paper wrap",
-      transcription:
-        "Set the inventory to half a box of stevia, 10 packs of paper wrap.",
-    },
-    {
-      id: "2",
-      text: "Restock Pens & Paper",
-      details: "5 boxes pens, 3 reams printer paper",
-      transcription:
-        "Update the inventory to 5 boxes of pens and 3 reams of printer paper.",
-    },
-    {
-      id: "3",
-      text: "Order Office Supplies",
-      details: "100 staplers, 50 hole punchers",
-      transcription: "Place an order for 100 staplers and 50 hole punchers.",
-    },
-  ]);
+export default function NewCommandStack() {
+  const dispatch = useDispatch();
+  const commands = useSelector(
+    (state: RootState) => state.commandStack.commands
+  );
   const [expandedCommand, setExpandedCommand] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
   const [editedDetails, setEditedDetails] = useState("");
-  const [swipeOffset, setSwipeOffset] = useState(0);
+  const [swipeOffset, setSwipeOffset] = useState({ x: 0, y: 0 });
+  const [swipeDirection, setSwipeDirection] = useState<"x" | "y" | null>(null);
   const [isSwiping, setIsSwiping] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
-  const [exitDirection, setExitDirection] = useState(0);
+  const [exitDirection, setExitDirection] = useState({ x: 0, y: 0 });
 
   const cardRef = useRef<HTMLDivElement>(null);
-  const startX = useRef(0);
+  const startPos = useRef({ x: 0, y: 0 });
 
   const toggleExpand = (id: string) => {
     setExpandedCommand(expandedCommand === id ? null : id);
   };
 
-  const executeCommand = () => {
+  const executeCurrentCommand = () => {
     if (commands.length > 0) {
-      console.log(`Executing command: ${commands[0].id}`);
+      dispatch(executeCommand(commands[0].id));
       setIsRemoving(true);
-      setExitDirection(1);
+      setExitDirection({ x: 1, y: 0 });
       setTimeout(() => {
-        setCommands((prevCommands) => prevCommands.slice(1));
+        dispatch(removeCommand(commands[0].id));
         setIsRemoving(false);
-        setExitDirection(0);
-        setSwipeOffset(0);
+        setExitDirection({ x: 0, y: 0 });
+        setSwipeOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
       }, 300);
     }
   };
 
-  const removeCommand = () => {
+  const removeCurrentCommand = () => {
     if (commands.length > 0) {
       setIsRemoving(true);
-      setExitDirection(-1);
+      setExitDirection({ x: -1, y: 0 });
       setTimeout(() => {
-        setCommands((prevCommands) => prevCommands.slice(1));
+        dispatch(removeCommand(commands[0].id));
         setIsRemoving(false);
-        setExitDirection(0);
-        setSwipeOffset(0);
+        setExitDirection({ x: 0, y: 0 });
+        setSwipeOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+      }, 300);
+    }
+  };
+
+  const moveCommandForward = () => {
+    if (commands.length > 0) {
+      setIsRemoving(true);
+      setExitDirection({ x: 0, y: -1 });
+      setTimeout(() => {
+        dispatch(cycleCommandForward());
+        setIsRemoving(false);
+        setExitDirection({ x: 0, y: 0 });
+        setSwipeOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
+      }, 300);
+    }
+  };
+
+  const moveCommandBackward = () => {
+    if (commands.length > 0) {
+      setIsRemoving(true);
+      setExitDirection({ x: 0, y: 1 });
+      setTimeout(() => {
+        dispatch(cycleCommandBackward());
+        setIsRemoving(false);
+        setExitDirection({ x: 0, y: 0 });
+        setSwipeOffset({ x: 0, y: 0 });
+        setSwipeDirection(null);
       }, 300);
     }
   };
@@ -80,51 +96,99 @@ export default function Component() {
   const startEditing = () => {
     if (commands.length > 0) {
       setIsEditing(true);
-      setEditedText(commands[0].text);
-      setEditedDetails(commands[0].details);
+      setEditedText(commands[0].rawCommand);
+      setEditedDetails(
+        `${commands[0].action} ${commands[0].quantity ?? ""} ${
+          commands[0].unit ?? ""
+        } of ${commands[0].item}`
+      );
     }
   };
 
   const saveEdit = () => {
     if (commands.length > 0) {
-      setCommands((prevCommands) => [
-        { ...prevCommands[0], text: editedText, details: editedDetails },
-        ...prevCommands.slice(1),
-      ]);
+      dispatch(
+        updateCommand({
+          id: commands[0].id,
+          changes: {
+            rawCommand: editedText,
+            // You might need to parse editedDetails to update action, quantity, unit, and item
+          },
+        })
+      );
       setIsEditing(false);
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    startX.current = e.touches[0].clientX;
+    startPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     setIsSwiping(true);
+    setSwipeDirection(null);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isSwiping) return;
     const currentX = e.touches[0].clientX;
-    const diff = currentX - startX.current;
-    const maxSwipe = window.innerWidth * 0.4; // 40% of screen width
-    const newOffset = Math.max(Math.min(diff, maxSwipe), -maxSwipe);
-    setSwipeOffset(newOffset);
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - startPos.current.x;
+    const diffY = currentY - startPos.current.y;
+    const maxSwipe = {
+      x: window.innerWidth * 0.4,
+      y: window.innerHeight * 0.2,
+    };
+
+    if (!swipeDirection) {
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 10) {
+        setSwipeDirection("x");
+      } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 10) {
+        setSwipeDirection("y");
+      }
+    }
+
+    if (swipeDirection === "x") {
+      setSwipeOffset({
+        x: Math.max(Math.min(diffX, maxSwipe.x), -maxSwipe.x),
+        y: 0,
+      });
+    } else if (swipeDirection === "y") {
+      setSwipeOffset({
+        x: 0,
+        y: Math.max(Math.min(diffY, maxSwipe.y), -maxSwipe.y),
+      });
+    }
   };
 
   const handleTouchEnd = () => {
     setIsSwiping(false);
-    const threshold = window.innerWidth * 0.3; // 30% of screen width
-    if (swipeOffset > threshold) {
-      executeCommand();
-    } else if (swipeOffset < -threshold) {
-      removeCommand();
-    } else {
-      setSwipeOffset(0);
+    const threshold = {
+      x: window.innerWidth * 0.3,
+      y: window.innerHeight * 0.15,
+    };
+    if (swipeDirection === "x") {
+      if (swipeOffset.x > threshold.x) {
+        executeCurrentCommand();
+      } else if (swipeOffset.x < -threshold.x) {
+        removeCurrentCommand();
+      } else {
+        setSwipeOffset({ x: 0, y: 0 });
+      }
+    } else if (swipeDirection === "y") {
+      if (swipeOffset.y > threshold.y) {
+        moveCommandForward();
+      } else if (swipeOffset.y < -threshold.y) {
+        moveCommandBackward();
+      } else {
+        setSwipeOffset({ x: 0, y: 0 });
+      }
     }
+    setSwipeDirection(null);
   };
 
   useEffect(() => {
     const handleMouseUp = () => {
       setIsSwiping(false);
-      setSwipeOffset(0);
+      setSwipeOffset({ x: 0, y: 0 });
+      setSwipeDirection(null);
     };
 
     document.addEventListener("mouseup", handleMouseUp);
@@ -135,142 +199,219 @@ export default function Component() {
 
   return (
     <div className="w-full min-h-screen bg-background flex flex-col">
-      <header className="p-4 bg-primary text-primary-foreground">
-        <h1 className="text-2xl font-bold">Command Stack</h1>
-      </header>
       <main className="flex-grow relative overflow-hidden px-4">
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          {commands.map((command, index) => (
-            <div
-              key={command.id}
-              className={`w-full max-w-sm absolute transition-all duration-300 ease-out ${
-                index === 0 ? "z-10" : `z-${10 - index}`
-              }`}
-              style={{
-                transform: `translateY(${index * 20}px) scale(${
-                  1 - index * 0.05
-                })`,
-                opacity: 1 - index * 0.2,
-                pointerEvents: index === 0 ? "auto" : "none",
-              }}
-            >
-              <Card
-                className={`w-full shadow-lg transition-all duration-300 ease-out ${
-                  isRemoving && index === 0 ? "opacity-0" : ""
+          <AnimatePresence>
+            {commands.map((command, index) => (
+              <motion.div
+                key={command.id}
+                className={`w-full max-w-sm absolute ${
+                  index === 0 ? "z-10" : `z-${10 - index}`
                 }`}
+                initial={
+                  index === 0
+                    ? { scale: 0.8, y: 50, opacity: 0 }
+                    : { scale: 1, y: index * 10, opacity: 1 - index * 0.2 }
+                }
+                animate={
+                  index === 0
+                    ? {
+                        scale: 1,
+                        opacity: 1,
+                        x: swipeOffset.x,
+                        y: swipeOffset.y,
+                        rotateZ: swipeOffset.x * 0.05,
+                      }
+                    : {
+                        scale: 1 - index * 0.05,
+                        y: index * 10,
+                        opacity: 1 - index * 0.2,
+                        x: 0,
+                        rotateZ: 0,
+                      }
+                }
+                exit={
+                  index === 0
+                    ? {
+                        scale: 0.8,
+                        opacity: 0,
+                        filter: "blur(10px)",
+                        x: exitDirection.x * window.innerWidth,
+                        y: exitDirection.y * window.innerHeight,
+                        transition: { duration: 0.3, ease: "easeInOut" },
+                      }
+                    : {}
+                }
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 style={{
-                  transform:
-                    index === 0
-                      ? `translateX(${
-                          isRemoving ? exitDirection * 100 : swipeOffset
-                        }px) rotate(${swipeOffset * 0.03}deg)`
-                      : "none",
+                  pointerEvents: index === 0 ? "auto" : "none",
                 }}
-                ref={index === 0 ? cardRef : undefined}
-                onTouchStart={index === 0 ? handleTouchStart : undefined}
-                onTouchMove={index === 0 ? handleTouchMove : undefined}
-                onTouchEnd={index === 0 ? handleTouchEnd : undefined}
               >
-                <CardContent className="p-6">
-                  {index === 0 ? (
-                    isEditing ? (
-                      <div className="space-y-2">
-                        <Input
-                          value={editedText}
-                          onChange={(e) => setEditedText(e.target.value)}
-                          className="font-medium"
-                        />
-                        <Input
-                          value={editedDetails}
-                          onChange={(e) => setEditedDetails(e.target.value)}
-                          className="text-sm text-muted-foreground"
-                        />
-                        <Button onClick={saveEdit} className="w-full">
-                          Save
-                        </Button>
-                      </div>
-                    ) : (
+                <Card
+                  className="w-full shadow-lg overflow-hidden"
+                  ref={index === 0 ? cardRef : undefined}
+                  onTouchStart={index === 0 ? handleTouchStart : undefined}
+                  onTouchMove={index === 0 ? handleTouchMove : undefined}
+                  onTouchEnd={index === 0 ? handleTouchEnd : undefined}
+                >
+                  <CardContent className="p-6 relative">
+                    {index === 0 && (
                       <>
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-grow pr-2">
-                            <h2 className="text-lg font-medium">
-                              {command.text}
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
-                              {command.details}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => toggleExpand(command.id)}
-                          >
-                            {expandedCommand === command.id ? (
-                              <ChevronUp />
-                            ) : (
-                              <ChevronDown />
-                            )}
-                          </Button>
-                        </div>
-                        {expandedCommand === command.id && (
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <Mic className="w-4 h-4 mr-2 flex-shrink-0" />
-                            <p className="line-clamp-2">
-                              {command.transcription}
-                            </p>
-                          </div>
-                        )}
-                        <div className="flex justify-end">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={startEditing}
-                          >
-                            <Edit2 className="w-4 h-4 mr-2" />
-                            Edit
-                          </Button>
-                        </div>
+                        <motion.div
+                          className="absolute inset-y-0 left-0 w-1 bg-green-500"
+                          initial={{ scaleY: 0 }}
+                          animate={{
+                            scaleY:
+                              swipeDirection === "x" && swipeOffset.x > 0
+                                ? Math.min(swipeOffset.x / 100, 1)
+                                : 0,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
+                        <motion.div
+                          className="absolute inset-y-0 right-0 w-1 bg-red-500"
+                          initial={{ scaleY: 0 }}
+                          animate={{
+                            scaleY:
+                              swipeDirection === "x" && swipeOffset.x < 0
+                                ? Math.min(-swipeOffset.x / 100, 1)
+                                : 0,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
+                        <motion.div
+                          className="absolute inset-x-0 bottom-0 h-1 bg-blue-500"
+                          initial={{ scaleX: 0 }}
+                          animate={{
+                            scaleX:
+                              swipeDirection === "y" && swipeOffset.y > 0
+                                ? Math.min(swipeOffset.y / 50, 1)
+                                : 0,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
+                        <motion.div
+                          className="absolute inset-x-0 top-0 h-1 bg-yellow-500"
+                          initial={{ scaleX: 0 }}
+                          animate={{
+                            scaleX:
+                              swipeDirection === "y" && swipeOffset.y < 0
+                                ? Math.min(-swipeOffset.y / 50, 1)
+                                : 0,
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                        />
                       </>
-                    )
-                  ) : (
-                    <>
-                      <h2 className="text-lg font-medium">{command.text}</h2>
-                      <p className="text-sm text-muted-foreground">
-                        {command.details}
-                      </p>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          ))}
+                    )}
+                    <motion.div
+                      initial={{ opacity: 1, filter: "blur(0px)" }}
+                      animate={{
+                        opacity: isRemoving ? 0 : 1,
+                        filter: isRemoving ? "blur(10px)" : "blur(0px)",
+                      }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {index === 0 && isEditing ? (
+                        <div className="space-y-2">
+                          <Input
+                            value={editedText}
+                            onChange={(e) => setEditedText(e.target.value)}
+                            className="font-medium"
+                          />
+                          <Input
+                            value={editedDetails}
+                            onChange={(e) => setEditedDetails(e.target.value)}
+                            className="text-sm text-muted-foreground"
+                          />
+                          <Button onClick={saveEdit} className="w-full">
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-grow pr-2">
+                              <h2 className="text-lg font-medium">
+                                {command.rawCommand}
+                              </h2>
+                              <p className="text-sm text-muted-foreground">
+                                {command.action} {command.quantity}{" "}
+                                {command.unit} of {command.item}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleExpand(command.id)}
+                            >
+                              {expandedCommand === command.id ? (
+                                <ChevronUp />
+                              ) : (
+                                <ChevronDown />
+                              )}
+                            </Button>
+                          </div>
+                          <AnimatePresence>
+                            {expandedCommand === command.id && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: "auto", opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 300,
+                                  damping: 30,
+                                }}
+                                className="flex items-center text-sm text-muted-foreground mb-2 overflow-hidden"
+                              >
+                                <Mic className="w-4 h-4 mr-2 flex-shrink-0" />
+                                <p className="line-clamp-2">
+                                  {command.rawCommand}
+                                </p>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          {index === 0 && (
+                            <div className="flex justify-end">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={startEditing}
+                              >
+                                <Edit2 className="w-4 h-4 mr-2" />
+                                Edit
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </motion.div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
-        {commands.length > 0 && (
-          <>
-            <div
-              className="absolute top-0 left-0 h-full w-16 bg-green-500 flex items-center justify-center transition-opacity duration-300"
-              style={{
-                opacity: swipeOffset > window.innerWidth * 0.15 ? 1 : 0,
-              }}
-            >
-              <Check className="text-white" size={24} />
-            </div>
-            <div
-              className="absolute top-0 right-0 h-full w-16 bg-red-500 flex items-center justify-center transition-opacity duration-300"
-              style={{
-                opacity: swipeOffset < -window.innerWidth * 0.15 ? 1 : 0,
-              }}
-            >
-              <X className="text-white" size={24} />
-            </div>
-          </>
-        )}
       </main>
-      {commands.length > 0 && (
-        <footer className="p-4 bg-muted text-center text-sm text-muted-foreground">
-          Swipe right to execute, left to delete
-        </footer>
-      )}
+      {/* <footer className="p-4 bg-muted text-center text-sm text-muted-foreground">
+        Swipe right to execute, left to delete, up/down to cycle
+      </footer> */}
     </div>
   );
 }

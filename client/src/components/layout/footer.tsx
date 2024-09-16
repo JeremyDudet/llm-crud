@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { addCommand } from "@/features/commandStackSlice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Mic, Send } from "lucide-react";
+import { Plus, Mic, Send, Headphones } from "lucide-react";
 
 // Type declarations (unchanged)
 interface SpeechRecognitionEvent extends Event {
@@ -42,6 +42,7 @@ export default function Footer() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [isVADReady, setIsVADReady] = useState(false);
   const [isVADLoading, setIsVADLoading] = useState(true);
+  const [isVADActive, setIsVADActive] = useState(false);
   const dispatch = useDispatch();
 
   const adjustTextareaHeight = useCallback(() => {
@@ -121,6 +122,7 @@ export default function Footer() {
 
   const processVoiceCommand = useCallback(
     async (audioBlob: Blob) => {
+      console.log("Processing voice command");
       setIsTranscribing(true);
       setError(null);
       try {
@@ -184,6 +186,7 @@ export default function Footer() {
               if (
                 validActions.includes(interpretedCommand.action as ValidAction)
               ) {
+                console.log("Dispatching addCommand:", interpretedCommand);
                 dispatch(
                   addCommand({
                     id:
@@ -226,37 +229,25 @@ export default function Footer() {
     [adjustTextareaHeight, MAX_FILE_SIZE, dispatch]
   );
 
-  const startRecording = useCallback(
-    async (stream?: MediaStream) => {
-      try {
-        if (!stream) {
-          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        }
-        mediaRecorderRef.current = new MediaRecorder(stream, {
-          mimeType: "audio/webm",
-          audioBitsPerSecond: 128000,
-        });
-        audioChunksRef.current = [];
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream, {
+        mimeType: "audio/webm",
+        audioBitsPerSecond: 128000,
+      });
+      audioChunksRef.current = [];
 
-        mediaRecorderRef.current.ondataavailable = (event) => {
-          audioChunksRef.current.push(event.data);
-        };
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
 
-        mediaRecorderRef.current.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, {
-            type: "audio/webm",
-          });
-          await processVoiceCommand(audioBlob);
-        };
-
-        mediaRecorderRef.current.start();
-        setIsListening(true);
-      } catch (error) {
-        console.error("Error starting recording:", error);
-      }
-    },
-    [processVoiceCommand]
-  );
+      mediaRecorderRef.current.start(1000); // Capture audio in 1-second chunks
+      setIsListening(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+    }
+  }, []);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
@@ -265,52 +256,53 @@ export default function Footer() {
     }
   }, []);
 
-  const handleVoiceButtonClick = useCallback(async () => {
-    if (isListening) {
-      stopRecording();
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-        });
-        startRecording(stream);
-      } catch (error) {
-        console.error("Error accessing microphone:", error);
-        setError(
-          "Failed to access microphone. Please check your browser settings."
-        );
-      }
-    }
-  }, [isListening, startRecording, stopRecording]);
-
   const vad = useMicVAD({
-    startOnLoad: true,
     onSpeechStart: () => {
       console.log("VAD: Speech started");
-      startRecording();
+      if (isVADActive) {
+        startRecording();
+      }
     },
     onSpeechEnd: () => {
       console.log("VAD: Speech ended");
-      stopRecording();
+      if (isVADActive) {
+        stopRecording();
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/webm",
+        });
+        processVoiceCommand(audioBlob);
+        audioChunksRef.current = [];
+      }
     },
     onVADMisfire: () => {
-      console.log("VAD: Misfire");
-      stopRecording();
+      if (isVADActive) {
+        console.log("VAD: Misfire");
+        stopRecording();
+      }
     },
     modelURL: "/models/silero_vad.onnx",
     workletURL: "/models/vad.worklet.bundle.min.js",
   });
 
-  useEffect(() => {
-    console.log("VAD loading state:", vad.loading);
-    console.log("User speaking state:", vad.userSpeaking);
-    setIsVADLoading(vad.loading);
-    setIsVADReady(!vad.loading);
-  }, [vad.loading, vad.userSpeaking]);
+  const handleVoiceButtonClick = useCallback(() => {
+    if (isVADActive) {
+      vad.pause();
+      setIsVADActive(false);
+      setIsListening(false);
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+    } else {
+      setIsVADActive(true);
+      vad.start();
+    }
+  }, [vad, isVADActive]);
 
   useEffect(() => {
-    console.log("userSpeaking state changed:", vad.userSpeaking);
-  }, [vad.userSpeaking]);
+    console.log("VAD loading state:", vad.loading);
+    setIsVADLoading(vad.loading);
+    setIsVADReady(!vad.loading);
+  }, [vad.loading]);
 
   const handleSend = useCallback(() => {
     if (textareaRef.current) {
@@ -320,6 +312,50 @@ export default function Footer() {
       }
     }
   }, [sendCommandToBackend]);
+
+  const handleMicrophoneClick = useCallback(async () => {
+    try {
+      setIsListening(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "voice_command.webm");
+
+        try {
+          const response = await apiClient.post(
+            "/api/transcribe-audio",
+            formData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+          setInputValue(response.data.transcription);
+          setIsTyping(true);
+          adjustTextareaHeight();
+        } catch (error) {
+          console.error("Transcription error:", error);
+          setError("Failed to transcribe audio. Please try again.");
+        }
+
+        setIsListening(false);
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 5000); // Record for 5 seconds
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      setError("Failed to access microphone. Please check your permissions.");
+      setIsListening(false);
+    }
+  }, [setInputValue, setIsTyping, adjustTextareaHeight, setError]);
 
   return (
     <div className="w-full px-4 pb-4 bg-background">
@@ -354,27 +390,43 @@ export default function Footer() {
           </>
         )}
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2 relative">
         <Button variant="outline" size="icon" className="shrink-0">
           <Plus className="h-4 w-4" />
         </Button>
 
-        <Textarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={handleInputChange}
-          placeholder="Message"
-          className="flex-grow bg-background max-h-[300px] overflow-y-auto w-full resize-none"
-          style={{
-            minHeight: "40px", // Set a minimum height
-            height: "auto", // Allow height to grow
-            maxHeight: "300px",
-            overflowX: "hidden", // Hide horizontal scrollbar
-            overflowY: "auto", // Show vertical scrollbar when needed
-            whiteSpace: "pre-wrap", // Preserve line breaks and wrap text
-            wordWrap: "break-word", // Break long words if necessary
-          }}
-        />
+        <div className="relative flex-grow">
+          <Textarea
+            ref={textareaRef}
+            value={inputValue}
+            onChange={handleInputChange}
+            placeholder="Message"
+            className="flex-grow bg-background max-h-[300px] overflow-y-auto w-full resize-none pr-10"
+            style={{
+              minHeight: "40px",
+              height: "auto",
+              maxHeight: "300px",
+              overflowX: "hidden",
+              overflowY: "auto",
+              whiteSpace: "pre-wrap",
+              wordWrap: "break-word",
+            }}
+          />
+          {!inputValue && (
+            <button
+              className="absolute right-2 bottom-2 p-1 text-gray-800"
+              onClick={handleMicrophoneClick}
+              disabled={isListening}
+            >
+              <Mic
+                className={`h-4 w-4 ${
+                  isListening ? "animate-pulse text-red-500" : ""
+                }`}
+              />
+            </button>
+          )}
+        </div>
+
         {isTyping ? (
           <Button
             variant="outline"
@@ -390,31 +442,23 @@ export default function Footer() {
             )}
           </Button>
         ) : (
-          <>
-            <Button
-              variant="outline"
-              size="icon"
-              className={`shrink-0 ${
-                isListening
-                  ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
-                  : ""
-              } ${vad.userSpeaking ? "animate-pulse" : ""}`}
-              onClick={() => {
-                console.log(
-                  "Voice button clicked, userSpeaking:",
-                  vad.userSpeaking
-                );
-                handleVoiceButtonClick();
-              }}
-              disabled={!isVADReady}
-            >
-              {isVADLoading ? (
-                <span className="loading loading-spinner loading-xs"></span>
-              ) : (
-                <Mic className="h-4 w-4" />
-              )}
-            </Button>
-          </>
+          <Button
+            variant="outline"
+            size="icon"
+            className={`shrink-0 ${
+              isVADActive
+                ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
+                : ""
+            } ${vad.userSpeaking ? "animate-pulse" : ""}`}
+            onClick={handleVoiceButtonClick}
+            disabled={!isVADReady}
+          >
+            {isVADLoading ? (
+              <span className="loading loading-spinner loading-xs"></span>
+            ) : (
+              <Headphones className="h-4 w-4" />
+            )}
+          </Button>
         )}
       </div>
       {isTranscribing && (

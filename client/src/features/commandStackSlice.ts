@@ -44,9 +44,27 @@ const commandStackSlice = createSlice({
         };
       }
     },
+    cycleCommandForward(state) {
+      if (state.commands.length > 0) {
+        const [first, ...rest] = state.commands;
+        state.commands = [...rest, first];
+      }
+    },
+    cycleCommandBackward(state) {
+      if (state.commands.length > 0) {
+        const last = state.commands[state.commands.length - 1];
+        state.commands = [last, ...state.commands.slice(0, -1)];
+      }
+    },
   },
 });
 
-export const { addCommand, removeCommand, executeCommand, updateCommand } =
-  commandStackSlice.actions;
+export const {
+  addCommand,
+  removeCommand,
+  executeCommand,
+  updateCommand,
+  cycleCommandForward,
+  cycleCommandBackward,
+} = commandStackSlice.actions;
 export default commandStackSlice.reducer;
