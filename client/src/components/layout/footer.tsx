@@ -1,9 +1,10 @@
 // src/components/layout/footer.tsx
+import { useState, useRef, useEffect, useCallback } from "react";
+import apiClient from "@/api/apiClient";
+import { useMicVAD } from "@ricky0123/vad-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Mic, Headphones, Send } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
-import apiClient from "@/api/apiClient";
 
 // Type declarations (unchanged)
 interface SpeechRecognitionEvent extends Event {
@@ -37,6 +38,8 @@ export default function Footer() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const [isVADReady, setIsVADReady] = useState(false);
+  const [isVADLoading, setIsVADLoading] = useState(true);
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -93,6 +96,24 @@ export default function Footer() {
   }, [adjustTextareaHeight]);
 
   const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
+
+  const sendCommandToBackend = useCallback(
+    async (command: string) => {
+      setIsProcessing(true);
+      try {
+        const response = await apiClient.post("/api/voice-commands", {
+          command,
+        });
+        console.log("Command processed:", response.data);
+      } catch (error) {
+        console.error("Error sending command to backend:", error);
+        setError("Failed to process command. Please try again.");
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [setIsProcessing, setError]
+  );
 
   const processVoiceCommand = useCallback(
     async (audioBlob: Blob) => {
@@ -163,44 +184,40 @@ export default function Footer() {
         setIsTranscribing(false);
       }
     },
-    [adjustTextareaHeight, MAX_FILE_SIZE]
+    [adjustTextareaHeight, MAX_FILE_SIZE, sendCommandToBackend]
   );
 
-  const startRecording = useCallback(async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: "audio/webm",
-        audioBitsPerSecond: 128000,
-      });
-      audioChunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, {
-          type: "audio/webm",
-        });
-        await processVoiceCommand(audioBlob);
-      };
-
-      mediaRecorderRef.current.start();
-      setIsListening(true);
-      setTimeout(() => {
-        if (
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state === "recording"
-        ) {
-          console.log("Minimum recording duration reached");
+  const startRecording = useCallback(
+    async (stream?: MediaStream) => {
+      try {
+        if (!stream) {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         }
-      }, 2000); // 2 seconds minimum recording time
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      // Handle the error (e.g., show a notification to the user)
-    }
-  }, [processVoiceCommand]);
+        mediaRecorderRef.current = new MediaRecorder(stream, {
+          mimeType: "audio/webm",
+          audioBitsPerSecond: 128000,
+        });
+        audioChunksRef.current = [];
+
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          audioChunksRef.current.push(event.data);
+        };
+
+        mediaRecorderRef.current.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, {
+            type: "audio/webm",
+          });
+          await processVoiceCommand(audioBlob);
+        };
+
+        mediaRecorderRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error("Error starting recording:", error);
+      }
+    },
+    [processVoiceCommand]
+  );
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current) {
@@ -209,29 +226,61 @@ export default function Footer() {
     }
   }, []);
 
-  const handleSend = useCallback(() => {
-    if (inputValue.trim()) {
-      sendCommandToBackend(inputValue.trim());
-      setInputValue("");
-      setIsTyping(false);
-      adjustTextareaHeight();
+  const handleVoiceButtonClick = useCallback(async () => {
+    if (isListening) {
+      stopRecording();
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
+        startRecording(stream);
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        setError(
+          "Failed to access microphone. Please check your browser settings."
+        );
+      }
     }
-  }, [inputValue, adjustTextareaHeight]);
+  }, [isListening, startRecording, stopRecording]);
 
-  const sendCommandToBackend = async (command: string) => {
-    setIsProcessing(true);
-    try {
-      const response = await apiClient.post("/api/voice-commands", { command });
-      console.log("Command processed:", response.data);
-      // You might want to dispatch an action here to update the Redux store
-      // or use React Query to invalidate and refetch relevant data
-    } catch (error) {
-      console.error("Error sending command to backend:", error);
-      setError("Failed to process command. Please try again.");
-    } finally {
-      setIsProcessing(false);
+  const vad = useMicVAD({
+    startOnLoad: true,
+    onSpeechStart: () => {
+      console.log("VAD: Speech started");
+      startRecording();
+    },
+    onSpeechEnd: () => {
+      console.log("VAD: Speech ended");
+      stopRecording();
+    },
+    onVADMisfire: () => {
+      console.log("VAD: Misfire");
+      stopRecording();
+    },
+    modelURL: "/models/silero_vad.onnx",
+    workletURL: "/models/vad.worklet.bundle.min.js",
+  });
+
+  useEffect(() => {
+    console.log("VAD loading state:", vad.loading);
+    console.log("User speaking state:", vad.userSpeaking);
+    setIsVADLoading(vad.loading);
+    setIsVADReady(!vad.loading);
+  }, [vad.loading, vad.userSpeaking]);
+
+  useEffect(() => {
+    console.log("userSpeaking state changed:", vad.userSpeaking);
+  }, [vad.userSpeaking]);
+
+  const handleSend = useCallback(() => {
+    if (textareaRef.current) {
+      const command = textareaRef.current.value.trim();
+      if (command) {
+        sendCommandToBackend(command);
+      }
     }
-  };
+  }, [sendCommandToBackend]);
 
   return (
     <div className="w-full px-4 pb-4 bg-background">
@@ -310,11 +359,21 @@ export default function Footer() {
                 isListening
                   ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
                   : ""
-              }`}
-              onClick={isListening ? stopRecording : startRecording}
-              disabled={isTranscribing}
+              } ${vad.userSpeaking ? "animate-pulse" : ""}`}
+              onClick={() => {
+                console.log(
+                  "Voice button clicked, userSpeaking:",
+                  vad.userSpeaking
+                );
+                handleVoiceButtonClick();
+              }}
+              disabled={!isVADReady}
             >
-              <Mic className="h-4 w-4" />
+              {isVADLoading ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
             </Button>
             <Button variant="outline" size="icon" className="shrink-0">
               <Headphones className="h-4 w-4" />
@@ -326,6 +385,11 @@ export default function Footer() {
         <div className="text-sm text-gray-500 mt-2">Transcribing audio...</div>
       )}
       {error && <div className="text-sm text-red-500 mt-2">{error}</div>}
+      {isListening && (
+        <div className="text-sm text-gray-500 mt-2">
+          {vad.userSpeaking ? "Listening..." : "Waiting for speech..."}
+        </div>
+      )}
     </div>
   );
 }
