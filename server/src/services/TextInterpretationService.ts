@@ -5,18 +5,20 @@ import OpenAI from "openai";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface InterpretedCommand {
-  action: "add" | "update" | "remove" | "check";
+  action: "add" | "update" | "remove" | "check" | "inventory" | "set";
   item: string;
-  itemId: number;
+  itemId?: number;
   quantity?: number;
   unit?: string;
-  userId: number;
-  count: number;
+  userId?: number;
+  count?: number;
+  status: "valid" | "inferred" | "invalid";
+  originalCommand?: string;
 }
 
 export async function interpretCommand(
   command: string
-): Promise<InterpretedCommand> {
+): Promise<InterpretedCommand[]> {
   console.log("Received command:", command);
 
   if (command.trim().length < 2) {
@@ -29,7 +31,7 @@ export async function interpretCommand(
       {
         role: "system",
         content:
-          "You are an AI assistant for a cafe inventory system. Parse the user's command and respond with a valid JSON object containing the keys: action, item, quantity, and unit. If the command is unclear, incomplete, or not related to inventory management, respond with a JSON object containing an 'error' key and a description of what's missing or unclear.",
+          "You are an AI assistant for a cafe inventory system. Parse the user's command and respond with a valid JSON array of objects. Each object should contain the keys: action, item, quantity, unit, and status. The status should be 'valid' for clear commands, 'inferred' for commands where you had to make assumptions, and 'invalid' for commands you couldn't understand. For 'invalid' commands, include an 'error' key explaining the issue.",
       },
       { role: "user", content: command },
     ],
@@ -43,7 +45,7 @@ export async function interpretCommand(
     throw new Error("No response from OpenAI API");
   }
 
-  let result: InterpretedCommand | { error: string };
+  let result: InterpretedCommand[];
   try {
     result = JSON.parse(responseText);
     console.log("Parsed result:", result);
@@ -52,23 +54,18 @@ export async function interpretCommand(
     throw new Error("Failed to parse OpenAI response as JSON");
   }
 
-  if ("error" in result) {
-    throw new Error(`Unclear command: ${result.error}`);
+  if (!Array.isArray(result)) {
+    throw new Error("Invalid response format: expected an array of commands");
   }
 
-  // Validate the result
-  if (
-    !result ||
-    typeof result !== "object" ||
-    !result.action ||
-    !result.item ||
-    !["add", "update", "remove", "check"].includes(result.action)
-  ) {
-    console.error("Invalid command interpretation:", result);
-    throw new Error(
-      "Invalid command interpretation: " + JSON.stringify(result)
-    );
-  }
+  // Transform "inventory" and "set" actions to "update"
+  result = result.map((command) => ({
+    ...command,
+    action: ["inventory", "set"].includes(command.action)
+      ? "update"
+      : command.action,
+    originalCommand: command.originalCommand || JSON.stringify(command),
+  }));
 
-  return result as InterpretedCommand;
+  return result;
 }

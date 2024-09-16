@@ -27,12 +27,21 @@ const commandStackSlice = createSlice({
         command.processed = true;
       }
     },
-    updateCommand(state, action: PayloadAction<InterpretedCommand>) {
+    updateCommand(
+      state,
+      action: PayloadAction<{
+        id: string;
+        changes: Partial<InterpretedCommand>;
+      }>
+    ) {
       const index = state.commands.findIndex(
         (command) => command.id === action.payload.id
       );
       if (index !== -1) {
-        state.commands[index] = action.payload;
+        state.commands[index] = {
+          ...state.commands[index],
+          ...action.payload.changes,
+        };
       }
     },
   },

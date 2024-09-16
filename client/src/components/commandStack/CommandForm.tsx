@@ -6,7 +6,7 @@ import { InterpretedCommand } from "@/types/InterpretedCommand";
 
 interface CommandFormProps {
   command: InterpretedCommand;
-  onSubmit: (changes: InterpretedCommand) => void;
+  onSubmit: (changes: Partial<InterpretedCommand>) => void;
   onCancel: () => void;
 }
 

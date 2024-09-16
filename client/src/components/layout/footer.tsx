@@ -1,10 +1,12 @@
 // src/components/layout/footer.tsx
 import { useState, useRef, useEffect, useCallback } from "react";
-import apiClient from "@/api/apiClient";
 import { useMicVAD } from "@ricky0123/vad-react";
+import apiClient from "@/api/apiClient";
+import { useDispatch } from "react-redux";
+import { addCommand } from "@/features/commandStackSlice";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Mic, Headphones, Send } from "lucide-react";
+import { Plus, Mic, Send } from "lucide-react";
 
 // Type declarations (unchanged)
 interface SpeechRecognitionEvent extends Event {
@@ -40,6 +42,7 @@ export default function Footer() {
   const audioChunksRef = useRef<Blob[]>([]);
   const [isVADReady, setIsVADReady] = useState(false);
   const [isVADLoading, setIsVADLoading] = useState(true);
+  const dispatch = useDispatch();
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -96,7 +99,7 @@ export default function Footer() {
   }, [adjustTextareaHeight]);
 
   const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
-  const MIN_AUDIO_SIZE = 1024; // Minimum size of 1KB
+  const MIN_AUDIO_SIZE = 512; // Minimum size of 0.5KB
 
   const sendCommandToBackend = useCallback(
     async (command: string) => {
@@ -151,25 +154,56 @@ export default function Footer() {
 
         console.log("Server response:", response);
         console.log("Response data:", response.data);
-        console.log("Transcribed text:", response.data.text);
 
-        if (response.data.text) {
-          const trimmedText = response.data.text.trim(); // Remove any leading/trailing whitespace
-          setInputValue(trimmedText);
-          setIsTyping(trimmedText.length > 0);
+        if (
+          response.data.transcription &&
+          Array.isArray(response.data.interpretedCommands)
+        ) {
+          const { transcription, interpretedCommands } = response.data;
+          setInputValue(transcription);
+          setIsTyping(transcription.length > 0);
           if (textareaRef.current) {
-            textareaRef.current.value = trimmedText;
-            // Manually trigger the input event to ensure React updates the state
+            textareaRef.current.value = transcription;
             textareaRef.current.dispatchEvent(
               new Event("input", { bubbles: true })
             );
           }
           adjustTextareaHeight();
-          if (trimmedText) {
-            sendCommandToBackend(trimmedText);
-          }
+
+          // Dispatch action to add multiple commands to Redux store
+          const validActions = ["add", "update", "remove", "check"] as const;
+          type ValidAction = (typeof validActions)[number];
+
+          interpretedCommands.forEach(
+            (interpretedCommand: {
+              action: string;
+              item: string;
+              quantity: number;
+              unit: string;
+            }) => {
+              if (
+                validActions.includes(interpretedCommand.action as ValidAction)
+              ) {
+                dispatch(
+                  addCommand({
+                    id:
+                      Date.now().toString() +
+                      Math.random().toString(36).substr(2, 9), // Generate a unique ID
+                    action: interpretedCommand.action as ValidAction,
+                    item: interpretedCommand.item,
+                    quantity: interpretedCommand.quantity,
+                    unit: interpretedCommand.unit,
+                    processed: false,
+                    rawCommand: transcription,
+                  })
+                );
+              } else {
+                console.error(`Invalid action: ${interpretedCommand.action}`);
+              }
+            }
+          );
         } else {
-          setError("Transcription failed: Empty response from server");
+          setError("Invalid response from server");
         }
       } catch (error) {
         console.error("Error processing voice command:", error);
@@ -189,7 +223,7 @@ export default function Footer() {
         setIsTranscribing(false);
       }
     },
-    [adjustTextareaHeight, MAX_FILE_SIZE, sendCommandToBackend]
+    [adjustTextareaHeight, MAX_FILE_SIZE, dispatch]
   );
 
   const startRecording = useCallback(
@@ -379,9 +413,6 @@ export default function Footer() {
               ) : (
                 <Mic className="h-4 w-4" />
               )}
-            </Button>
-            <Button variant="outline" size="icon" className="shrink-0">
-              <Headphones className="h-4 w-4" />
             </Button>
           </>
         )}

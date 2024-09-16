@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState, AppDispatch } from "@/redux/store";
+import { RootState } from "@/redux/store";
 import {
   removeCommand,
   updateCommand,
@@ -14,17 +14,17 @@ import { InterpretedCommand } from "@/types/InterpretedCommand";
 import CommandForm from "./CommandForm";
 
 export default function CommandStack() {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
   const commands = useSelector(
     (state: RootState) => state.commandStack.commands
   );
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleEdit = (command: InterpretedCommand) => {
-    setEditingId(command.id);
+  const handleEdit = (id: string) => {
+    setEditingId(id);
   };
 
-  const handleUpdate = (id: string, changes: InterpretedCommand) => {
+  const handleUpdate = (id: string, changes: Partial<InterpretedCommand>) => {
     dispatch(updateCommand({ id, changes }));
     setEditingId(null);
   };
@@ -58,64 +58,46 @@ export default function CommandStack() {
                   onCancel={() => setEditingId(null)}
                 />
               ) : (
-                <CommandDisplay
-                  command={command}
-                  onEdit={() => handleEdit(command)}
-                  onRemove={() => handleRemove(command.id)}
-                  onExecute={() => handleExecute(command.id)}
-                />
+                <div>
+                  <p className="font-semibold">{command.rawCommand}</p>
+                  <p className="text-sm mt-1">
+                    {command.action} {command.quantity} {command.unit} of{" "}
+                    {command.item}
+                  </p>
+                  <div className="mt-2 space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEdit(command.id)}
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRemove(command.id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Remove
+                    </Button>
+                    {!command.processed && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExecute(command.id)}
+                      >
+                        <Play className="w-4 h-4 mr-1" />
+                        Execute
+                      </Button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ))}
         </ScrollArea>
       </CardContent>
     </Card>
-  );
-}
-
-interface CommandDisplayProps {
-  command: Command;
-  onEdit: () => void;
-  onRemove: () => void;
-  onExecute: () => void;
-}
-
-function CommandDisplay({
-  command,
-  onEdit,
-  onRemove,
-  onExecute,
-}: CommandDisplayProps) {
-  return (
-    <>
-      <p className="font-semibold">{command.rawCommand}</p>
-      <p className="text-sm mt-1">
-        Interpreted: {command.interpretedCommand.action}{" "}
-        {command.interpretedCommand.quantity} {command.interpretedCommand.unit}{" "}
-        of {command.interpretedCommand.item}
-      </p>
-      <p className="text-sm text-gray-500">
-        {new Date(command.timestamp).toLocaleString()}
-      </p>
-      <p className="text-sm font-medium mt-1">
-        {command.processed ? "Processed" : "Pending"}
-      </p>
-      <div className="mt-2 space-x-2">
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          <Edit2 className="w-4 h-4 mr-1" />
-          Edit
-        </Button>
-        <Button variant="outline" size="sm" onClick={onRemove}>
-          <Trash2 className="w-4 h-4 mr-1" />
-          Remove
-        </Button>
-        {!command.processed && (
-          <Button variant="outline" size="sm" onClick={onExecute}>
-            <Play className="w-4 h-4 mr-1" />
-            Execute
-          </Button>
-        )}
-      </div>
-    </>
   );
 }
