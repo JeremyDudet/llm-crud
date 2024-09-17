@@ -49,6 +49,14 @@ export const items = sqliteTable("item", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
+export const commands = sqliteTable("command", {
+  id: integer("id").primaryKey(),
+  text: text("text").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+});
+
 // InventoryCount table
 export const inventoryCounts = sqliteTable("inventory_count", {
   id: integer("id").primaryKey(),

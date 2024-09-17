@@ -11,6 +11,7 @@ import type { AllowedAction } from "../config/constants";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface InterpretedCommand {
+  id: number;
   action: "set" | "add" | "subtract";
   itemName: string;
   itemId: number;

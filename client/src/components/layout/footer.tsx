@@ -162,18 +162,9 @@ export default function Footer() {
           Array.isArray(response.data.interpretedCommands)
         ) {
           const { transcription, interpretedCommands } = response.data;
-          setInputValue(transcription);
-          setIsTyping(transcription.length > 0);
-          if (textareaRef.current) {
-            textareaRef.current.value = transcription;
-            textareaRef.current.dispatchEvent(
-              new Event("input", { bubbles: true })
-            );
-          }
-          adjustTextareaHeight();
 
           // Dispatch action to add multiple commands to Redux store
-          const validActions = ["add", "update", "remove", "check"] as const;
+          const validActions = ["set", "add", "subtract"] as const;
           type ValidAction = (typeof validActions)[number];
 
           interpretedCommands.forEach(
@@ -189,13 +180,11 @@ export default function Footer() {
                 console.log("Dispatching addCommand:", interpretedCommand);
                 dispatch(
                   addCommand({
-                    id:
-                      Date.now().toString() +
-                      Math.random().toString(36).substr(2, 9), // Generate a unique ID
+                    id: interpretedCommand.id,
                     action: interpretedCommand.action as ValidAction,
-                    item: interpretedCommand.item,
+                    itemName: interpretedCommand.item,
                     quantity: interpretedCommand.quantity,
-                    unit: interpretedCommand.unit,
+                    unitOfMeasureName: interpretedCommand.unit,
                     processed: false,
                     rawCommand: transcription,
                   })
@@ -226,7 +215,7 @@ export default function Footer() {
         setIsTranscribing(false);
       }
     },
-    [adjustTextareaHeight, MAX_FILE_SIZE, dispatch]
+    [MAX_FILE_SIZE, dispatch]
   );
 
   const startRecording = useCallback(async () => {
@@ -284,7 +273,7 @@ export default function Footer() {
     workletURL: "/models/vad.worklet.bundle.min.js",
   });
 
-  const handleVoiceButtonClick = useCallback(() => {
+  const handleHeadphonesClick = useCallback(() => {
     if (isVADActive) {
       vad.pause();
       setIsVADActive(false);
@@ -450,7 +439,7 @@ export default function Footer() {
                 ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
                 : ""
             } ${vad.userSpeaking ? "animate-pulse" : ""}`}
-            onClick={handleVoiceButtonClick}
+            onClick={handleHeadphonesClick}
             disabled={!isVADReady}
           >
             {isVADLoading ? (

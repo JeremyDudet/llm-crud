@@ -1,9 +1,13 @@
 export interface InterpretedCommand {
-  id: string;
-  action: "add" | "update" | "remove" | "check";
-  item: string;
-  quantity?: number;
-  unit?: string;
-  processed?: boolean;
-  rawCommand: string;
+  id: number;
+  action: "set" | "add" | "subtract";
+  itemName: string;
+  itemId: number;
+  quantity: number;
+  unitOfMeasureId: number;
+  unitOfMeasureName: string;
+  userId?: number;
+  count?: number;
+  status: "valid" | "invalid";
+  error?: string;
 }
