@@ -1,54 +1,277 @@
-You are an expert in TypeScript, Node.js, Express.js, React, Redux, Shadcn UI, Tailwind CSS, Drizzle ORM, React Query, React Router, and SQLite.
+# Project Context File
 
-TypeScript Usage
+## Project Overview
 
-- Use TypeScript for all code; prefer interfaces over types.
-- Avoid enums; use maps instead.
-- Use functional components with TypeScript interfaces.
+A web-based inventory management system tailored for busy cafe owners and staff. It leverages voice control capabilities to streamline inventory tasks, allowing users to manage inventory through simple speech commands. Key features include:
 
-UI and Styling
+- **Voice-Powered Inventory Management**: Users can add, update, or remove inventory items using voice commands.
+- **Smart Shopping Lists**: Automatically generated shopping lists based on inventory levels.
+- **Timely Alerts**: Notifications for low-stock items.
+- **Team Collaboration**: Multi-user support for team-based inventory management.
+- **Simple Analytics**: Easy-to-understand insights to aid in business decisions.
 
-- Use Shadcn UI, and Tailwind for components and styling.
-- Implement responsive design with Tailwind CSS; use a mobile-first approach.
+**Target Audience**: Cafe owners and employees seeking an efficient and intuitive way to manage inventory and streamline operations.
 
-Performance Optimization
+## Architecture Summary
 
-- Use dynamic loading for non-critical components.
-- Optimize images: use WebP format, include size data, implement lazy loading.
+The application follows a client-server architecture with the following technologies:
 
-Client-side data fetching
+- **Frontend**:
 
-- Use React Query for client-side data fetching.
-- Use Redux for client-side state management.
+  - **React** with TypeScript: Building a Single Page Application (SPA).
+  - **Redux Toolkit**: Managing client-side state.
+  - **React Query**: Handling server-state and data fetching.
+  - **Shadcn UI** and **Tailwind CSS**: UI components and styling.
+  - **Vite**: Development tooling.
 
-The client is organized into the following order:
+- **Backend**:
+  - **Express.js** with TypeScript: Handling server-side logic and API endpoints.
+  - **Drizzle ORM** with **SQLite**: Database interactions.
+  - **OpenAI APIs**: Utilizing GPT-4 and Whisper models for voice transcription and command interpretation.
 
-src/
+**Interaction Flow**:
 
-- src/api
-  - /mutations
-  - /queries
-- src/components/
-- src/features/
-- src/hooks/
-- src/lib/
-  - /utils
-- src/pages/
-- src/styles/
-  The express backend is organized into the following order:
+1. **User Input**: The user interacts with the frontend via voice or text.
+2. **Voice Processing**: Audio data is sent to the backend for transcription.
+3. **Command Interpretation**: Transcribed text is processed by OpenAI GPT-4 to interpret commands.
+4. **Database Update**: The backend updates the inventory in the database.
+5. **Real-Time Updates**: The frontend fetches updated data via React Query.
 
-src/
+## Module Breakdown
 
-- src/controllers/
-- src/database/
-- src/middleware/
-- src/routes/
-- src/services/
-- src/utils/
-- src/app.ts
+### Frontend Modules
 
-Follow React Query docs for Client-side Data Fetching.
-Follow React Redux for client-side state management.
-Follow Drizzle ORM docs for Database Operations.
-Follow Shadcn UI docs for UI Components.
-Follow Tailwind CSS docs for Styling.
+- **Components** (`src/components/`):
+
+  - **AppShell**: The main layout component incorporating the header, footer, and navigation.
+  - **Footer**: Handles user input, including voice recording and text input.
+  - **CommandStack**: Displays and manages the list of interpreted commands before execution.
+  - **FeatureCard** and **TestimonialCard**: Present features and testimonials on the landing page.
+
+- **Pages** (`src/pages/`):
+
+  - **LandingPage**: The public-facing homepage showcasing the app's features.
+  - **Dashboard**: The main user interface for managing inventory.
+  - **Profile**: Displays user information and settings.
+
+- **Redux Store** (`src/redux/`):
+
+  - **Slices**: State management for user authentication, inventory, and command stack.
+  - **Store Configuration**: Combines slices and applies middleware.
+
+- **API** (`src/api/`):
+  - **Queries**: React Query hooks for data fetching.
+  - **Mutations**: Hooks for data mutations (e.g., adding or updating inventory).
+  - **apiClient.ts**: Axios instance pre-configured with base URL and interceptors.
+
+### Backend Modules
+
+- **Controllers** (`src/controllers/`):
+
+  - **VoiceCommandController**: Handles incoming audio files, transcribes them, and interprets commands.
+
+- **Services** (`src/services/`):
+
+  - **AudioTranscriptionService**: Uses OpenAI's Whisper model to transcribe audio.
+  - **TextInterpretationService**: Utilizes GPT-4 to parse transcriptions into actionable commands.
+  - **AutoCompleteTranscriptionService**: Improves transcription accuracy.
+
+- **Routes** (`src/routes/`):
+
+  - **voiceCommandRoutes**: Endpoints for processing voice commands.
+  - **authRoutes**: Handles user authentication.
+
+- **Database** (`src/database/`):
+  - **Schema Definitions**: Defines database tables and relationships using Drizzle ORM.
+
+## Key Classes and Functions
+
+### Frontend
+
+- **Footer Component** (`src/components/layout/footer.tsx`):
+
+  Handles voice recording, speech recognition, and text input from the user. Key functionalities include:
+
+  - **useMicVAD Hook**: Implements Voice Activity Detection (VAD) to start recording when the user speaks.
+  - **handleSend Function**: Processes the user's input and sends it to the backend.
+
+- **AppRouter** (`src/routes/AppRouter.tsx`):
+
+  Defines the main routing configuration of the application using React Router.
+
+### Backend
+
+- **processCommand Function** (`VoiceCommandController.ts`):
+
+  Receives audio data from the client, transcribes it, and interprets the command. It coordinates between transcription and interpretation services.
+
+- **transcribeAudio Function** (`AudioTranscriptionService.ts`):
+
+  Uses OpenAI's Whisper model to transcribe audio files into text.
+
+  ```typescript
+  export const transcribeAudio = async (
+    audioBuffer: Buffer
+  ): Promise<string> => {
+    // Logic to save audio buffer, send to OpenAI API, and return transcription.
+  };
+  ```
+
+- **interpretCommand Function** (`TextInterpretationService.ts`):
+
+  Parses transcribed text into structured command objects using GPT-4, determining actions like "add", "update", or "remove".
+
+  ```typescript
+  export async function interpretCommand(
+    command: string
+  ): Promise<InterpretedCommand[]> {
+    // Sends command to OpenAI API and parses the response.
+  }
+  ```
+
+## External Dependencies
+
+- **OpenAI API**:
+
+  - **Whisper Model**: For audio transcription.
+  - **GPT-4**: For interpreting transcribed text into commands.
+
+- **React Ecosystem**:
+
+  - **React**: Building user interfaces.
+  - **Redux Toolkit**: Managing application state.
+  - **React Query**: Data fetching and caching.
+  - **React Router**: Client-side routing.
+
+- **UI Libraries**:
+
+  - **Shadcn UI**: Pre-built UI components.
+  - **Tailwind CSS**: Utility-first CSS framework.
+
+- **Drizzle ORM**:
+
+  - Used for database interactions with SQLite.
+
+- **Other Libraries**:
+
+  - **Axios**: For making HTTP requests.
+  - **Lucide React**: Icon library.
+  - **OpenAI**: Official SDK for interacting with OpenAI's API.
+  - **VAD Libraries**: For voice activity detection (`@ricky0123/vad-react`, `@ricky0123/vad-web`).
+
+## Data Models and Schemas
+
+### Command Structure
+
+```typescript
+interface InterpretedCommand {
+  action: "add" | "update" | "remove" | "check" | "inventory" | "set";
+  item: string;
+  quantity?: number;
+  unit?: string;
+  status: "valid" | "inferred" | "invalid";
+  originalCommand?: string;
+}
+```
+
+### Inventory Item
+
+```typescript
+interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  lastUpdated: string; // ISO timestamp
+}
+```
+
+### Database Schema
+
+- **Users**: Stores user credentials and profiles.
+- **Inventory**: Holds inventory items with quantities and units.
+- **Commands**: Logs of interpreted commands for auditing.
+
+Relationships are managed via foreign keys, ensuring data integrity.
+
+## Configuration and Environment
+
+- **Environment Variables** (`.env`):
+
+  - `OPENAI_API_KEY`: API key for OpenAI services.
+  - `PORT`: Server port number.
+  - **Note**: Sensitive information like API keys should be stored securely and not committed to version control.
+
+- **Frontend Configuration**:
+
+  - **`vite.config.ts`**: Configuration for Vite bundler.
+  - **Tailwind CSS Config** (`tailwind.config.js`): Customizes themes and plugins.
+
+- **Backend Configuration**:
+
+  - **Database Connection**: Configured to use SQLite via Drizzle ORM.
+  - **Middleware**: Uses `helmet` for security, `cors` for cross-origin requests, and `morgan` for logging.
+
+## Known Issues and TODOs
+
+- **Real-Time Updates**:
+
+  - Currently using React Query's polling mechanism.
+  - **Future Improvement**: Implement WebSockets for true real-time inventory updates.
+
+- **Error Handling**:
+
+  - Need to enhance error handling, especially around voice recognition failures and network interruptions.
+
+- **Performance Optimization**:
+
+  - Implement debouncing for voice input.
+  - Use memoization in React components.
+  - Consider virtual scrolling for large inventory lists.
+
+- **Security Enhancements**:
+
+  - Implement robust authentication and authorization.
+  - Ensure all data transmissions are secure (HTTPS).
+
+## Testing and Quality Assurance
+
+- **Testing Strategy**:
+
+  - **Unit Tests**: For Redux slices and utility functions.
+  - **Integration Tests**: Testing API endpoints and services.
+  - **End-to-End Tests**: Simulating user interactions with tools like Selenium or Cypress.
+
+- **Tools**:
+
+  - **ESLint**: Linting and code quality.
+  - **Prettier**: Code formatting.
+  - **TypeScript**: Static type checking to prevent type errors.
+
+## Guidelines for Future Prompts
+
+- **Be Specific**:
+
+  - Clearly state the module, component, or function you're referring to.
+  - Example: "How can I optimize the `transcribeAudio` function in `AudioTranscriptionService.ts`?"
+
+- **Provide Context**:
+
+  - Mention any relevant code snippets or error messages.
+  - If discussing a bug, describe the expected vs. actual behavior.
+
+- **Ask Targeted Questions**:
+
+  - Break down complex issues into smaller, manageable questions.
+  - Example: "What is the best way to handle authentication in Express.js using JWTs?"
+
+- **Clarify Intent**:
+
+  - Indicate whether you're seeking a code review, debugging help, or architectural advice.
+
+- **Reference Architecture**:
+
+  - If relevant, mention the architectural patterns or libraries being used.
+  - Example: "Using React Query, how can I handle cache invalidation after updating inventory data?"
+
+By following these guidelines, you can elicit more precise and helpful responses, leading to efficient problem-solving and development.

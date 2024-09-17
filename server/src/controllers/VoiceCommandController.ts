@@ -3,7 +3,6 @@
 import { Request, Response } from "express";
 import { transcribeAudio } from "../services/AudioTranscriptionService";
 import { interpretCommand } from "../services/TextInterpretationService";
-import { autocompleteTranscription } from "../services/AutoCompleteTranscriptionService";
 
 export async function processCommand(
   req: Request,
@@ -21,12 +20,13 @@ export async function processCommand(
     const transcription = await transcribeAudio(audioBuffer);
     console.log("Transcription result:", transcription);
 
+    console.log("Interpreting transcription...");
     const interpretedCommands = await interpretCommand(transcription);
+    console.log("Interpreted commands:", interpretedCommands);
 
     res.json({
       transcription,
       interpretedCommands,
-      suggestedTranscription: await autocompleteTranscription(transcription),
     });
   } catch (error) {
     console.error("Error processing voice command:", error);

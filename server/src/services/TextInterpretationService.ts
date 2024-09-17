@@ -1,41 +1,83 @@
 // src/services/LLMService.ts
 // This file contains the LLMService class which is used to interpret voice commands.
 import OpenAI from "openai";
+import {
+  ALLOWED_ACTIONS,
+  fetchInventoryItems,
+  fetchUnitOfMeasures,
+} from "../config/constants";
+import type { AllowedAction } from "../config/constants";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface InterpretedCommand {
-  action: "add" | "update" | "remove" | "check" | "inventory" | "set";
-  item: string;
-  itemId?: number;
-  quantity?: number;
-  unit?: string;
+  action: "set" | "add" | "subtract";
+  itemName: string;
+  itemId: number;
+  quantity: number;
+  unitOfMeasureId: number;
+  unitOfMeasureName: string;
   userId?: number;
   count?: number;
-  status: "valid" | "inferred" | "invalid";
-  originalCommand?: string;
+  status: "valid" | "invalid";
+  error?: string;
 }
 
 export async function interpretCommand(
-  command: string
+  transcription: string
 ): Promise<InterpretedCommand[]> {
-  console.log("Received command:", command);
+  console.log("Received transcription:", transcription);
 
-  if (command.trim().length < 2) {
+  if (transcription.trim().length < 2) {
     throw new Error("Unclear command: The command is too short or empty.");
   }
 
+  // Fetch current inventory items
+  const inventoryItems = await fetchInventoryItems();
+  const unitOfMeasures = await fetchUnitOfMeasures();
+  const inventoryListForPrompt = inventoryItems.map((item) => ({
+    itemId: item.id,
+    itemName: item.name,
+    // Get the item's unit of measure name from the unitOfMeasures array
+    unitOfMeasureName:
+      unitOfMeasures.find((uom) => uom.id === item.unitOfMeasureId)?.name ||
+      "Unknown",
+    unitOfMeasureId:
+      unitOfMeasures.find((uom) => uom.id === item.unitOfMeasureId)?.id ||
+      "Unknown",
+  }));
+
+  // Build system prompt
+  const systemPrompt = `You are an AI assistant for a cafe inventory system.
+    - Allowed actions: ${ALLOWED_ACTIONS.join(", ")}.
+    - Inventory items: ${inventoryListForPrompt}.
+    Parse the user's command and respond with a JSON array of objects.
+    Each object should follow this structure: 
+    {
+      action: "set" | "add" | "subtract",
+      itemName: string,
+      itemId: number,
+      quantity: number,
+      unitOfMeasureId: number,
+      unitOfMeasureName: string,
+      confidence: number,
+    }
+    - action: one of the allowed actions.
+    - itemName: an item from the inventory.
+    - quantity: an integer or a floating-point number.
+    - unitOfMeasureId: the id of the unit of measure.
+    - unitOfMeasureName: the name of the unit of measure.
+    - confidence: a number between 0 and 1 indicating the confidence in the interpretation.
+    `;
+
+  // Call the OpenAI API
   const completion = await openai.chat.completions.create({
     model: "gpt-4",
     messages: [
-      {
-        role: "system",
-        content:
-          "You are an AI assistant for a cafe inventory system. Parse the user's command and respond with a valid JSON array of objects. Each object should contain the keys: action, item, quantity, unit, and status. The status should be 'valid' for clear commands, 'inferred' for commands where you had to make assumptions, and 'invalid' for commands you couldn't understand. For 'invalid' commands, include an 'error' key explaining the issue.",
-      },
-      { role: "user", content: command },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: transcription },
     ],
-    temperature: 0,
+    temperature: 0.1,
   });
 
   const responseText = completion.choices[0]?.message?.content;
@@ -54,18 +96,33 @@ export async function interpretCommand(
     throw new Error("Failed to parse OpenAI response as JSON");
   }
 
-  if (!Array.isArray(result)) {
-    throw new Error("Invalid response format: expected an array of commands");
-  }
+  // Validate actions and items
+  result = result.map((cmd) => {
+    if (!ALLOWED_ACTIONS.includes(cmd.action)) {
+      cmd.status = "invalid";
+      cmd.error = `Invalid action: ${cmd.action}`;
+    }
+    if (
+      !inventoryItems.some(
+        (item) => item.id === cmd.itemId && item.name === cmd.itemName
+      )
+    ) {
+      cmd.status = "invalid";
+      cmd.error = `Item not found in inventory: ${cmd.itemName} (ID: ${cmd.itemId})`;
+    }
+    if (
+      !unitOfMeasures.some(
+        (uom) =>
+          uom.id === cmd.unitOfMeasureId && uom.name === cmd.unitOfMeasureName
+      )
+    ) {
+      cmd.status = "invalid";
+      cmd.error = `Unit of measure not found in inventory: ${cmd.unitOfMeasureName} (ID: ${cmd.unitOfMeasureId})`;
+    }
+    return cmd;
+  });
 
-  // Transform "inventory" and "set" actions to "update"
-  result = result.map((command) => ({
-    ...command,
-    action: ["inventory", "set"].includes(command.action)
-      ? "update"
-      : command.action,
-    originalCommand: command.originalCommand || JSON.stringify(command),
-  }));
+  // Filter out invalid commands or handle them accordingly
 
   return result;
 }
