@@ -7,8 +7,10 @@ import { db } from "./database";
 import { users } from "./database/schema";
 import userRoutes from "./routes/userRoutes";
 import authRoutes from "./routes/authRoutes";
-import voiceCommandRoutes from "./routes/voiceCommandRoutes";
+import processCommandRoutes from "./routes/processCommandRoutes";
 import transcribeAudioRoutes from "./routes/transcribeAudioRoutes";
+import processTextCommandRoutes from "./routes/processTextCommandRoutes";
+
 dotenv.config();
 
 const app = express();
@@ -35,8 +37,9 @@ db.select()
 // Routes
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/voice-commands", voiceCommandRoutes);
+
 app.use("/api/transcribe-audio", transcribeAudioRoutes);
+app.use("/api/process-text-command", processTextCommandRoutes);
 
 // Basic route for testing
 app.get("/", (req, res) => {

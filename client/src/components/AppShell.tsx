@@ -13,7 +13,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useLogout } from "../hooks/useLogout";
 import { useSelector } from "react-redux";
 import { RootState } from "../redux/store";
-import Footer from "./layout/footer";
+import Footer from "./footer";
 function classNames(...classes: string[]): string {
   return classes.filter(Boolean).join(" ");
 }

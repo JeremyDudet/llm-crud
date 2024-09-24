@@ -2,7 +2,7 @@
 import express from "express";
 import multer from "multer";
 import { authenticateToken } from "../middleware/auth";
-import { transcribeAudioController } from "../controllers/VoiceCommandController";
+import { transcribeAudioController } from "../controllers/TranscribeAudioController";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });

@@ -5,8 +5,8 @@ import apiClient from "@/api/apiClient";
 import { useDispatch } from "react-redux";
 import { addCommand } from "@/features/commandStackSlice";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Plus, Mic, Send, Headphones } from "lucide-react";
+import { Send, Headphones } from "lucide-react";
+import FooterInputTextPrompt from "./FooterInputTextPrompt";
 
 // Type declarations (unchanged)
 interface SpeechRecognitionEvent extends Event {
@@ -30,7 +30,6 @@ declare global {
 }
 
 export default function Footer() {
-  const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +43,10 @@ export default function Footer() {
   const [isVADLoading, setIsVADLoading] = useState(true);
   const [isVADActive, setIsVADActive] = useState(false);
   const dispatch = useDispatch();
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingTranscription, setIsProcessingTranscription] =
+    useState(false);
+  const [isVADSpeechDetected, setIsVADSpeechDetected] = useState(false);
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -61,7 +64,6 @@ export default function Footer() {
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newValue = e.target.value;
       setInputValue(newValue);
-      setIsTyping(newValue.length > 0);
       adjustTextareaHeight();
     },
     [adjustTextareaHeight]
@@ -92,7 +94,6 @@ export default function Footer() {
             .join("");
 
           setInputValue(transcript);
-          setIsTyping(transcript.length > 0);
           adjustTextareaHeight();
         };
       }
@@ -106,7 +107,7 @@ export default function Footer() {
     async (command: string) => {
       setIsProcessing(true);
       try {
-        const response = await apiClient.post("/api/voice-commands", {
+        const response = await apiClient.post("/api/process-text-command", {
           command,
         });
         console.log("Command processed:", response.data);
@@ -148,11 +149,15 @@ export default function Footer() {
           );
         }
 
-        const response = await apiClient.post("/api/voice-commands", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
+        const response = await apiClient.post(
+          "/api/process-command",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
 
         console.log("Server response:", response);
         console.log("Response data:", response.data);
@@ -248,12 +253,14 @@ export default function Footer() {
   const vad = useMicVAD({
     onSpeechStart: () => {
       console.log("VAD: Speech started");
+      setIsVADSpeechDetected(true);
       if (isVADActive) {
         startRecording();
       }
     },
     onSpeechEnd: () => {
       console.log("VAD: Speech ended");
+      setIsVADSpeechDetected(false);
       if (isVADActive) {
         stopRecording();
         const audioBlob = new Blob(audioChunksRef.current, {
@@ -293,135 +300,96 @@ export default function Footer() {
     setIsVADReady(!vad.loading);
   }, [vad.loading]);
 
-  const handleSend = useCallback(() => {
+  const handleSendTextCommand = useCallback(() => {
     if (textareaRef.current) {
-      const command = textareaRef.current.value.trim();
+      const command = inputValue;
       if (command) {
         sendCommandToBackend(command);
       }
     }
-  }, [sendCommandToBackend]);
+  }, [sendCommandToBackend, inputValue]);
 
-  const handleMicrophoneClick = useCallback(async () => {
-    try {
-      setIsListening(true);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      const audioChunks: Blob[] = [];
+  const handleTranscribeAudio = useCallback(() => {
+    if (isRecording) {
+      // Stop recording
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
+    } else {
+      // Start recording
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          const mediaRecorder = new MediaRecorder(stream);
+          mediaRecorderRef.current = mediaRecorder;
+          audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-      };
+          mediaRecorder.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+          };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("audio", audioBlob, "voice_command.webm");
+          mediaRecorder.onstop = async () => {
+            const audioBlob = new Blob(audioChunksRef.current, {
+              type: "audio/webm",
+            });
+            const formData = new FormData();
+            formData.append("audio", audioBlob, "voice_command.webm");
 
-        try {
-          const response = await apiClient.post(
-            "/api/transcribe-audio",
-            formData,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
+            try {
+              setIsProcessingTranscription(true);
+              const response = await apiClient.post(
+                "/api/transcribe-audio",
+                formData,
+                {
+                  headers: { "Content-Type": "multipart/form-data" },
+                }
+              );
+              setInputValue(response.data.transcription);
+              adjustTextareaHeight();
+            } catch (error) {
+              console.error("Transcription error:", error);
+              setError("Failed to transcribe audio. Please try again.");
+            } finally {
+              setIsProcessingTranscription(false);
             }
+
+            // Stop all tracks on the stream to release the microphone
+            stream.getTracks().forEach((track) => track.stop());
+          };
+
+          mediaRecorder.start();
+          setIsRecording(true);
+        })
+        .catch((error) => {
+          console.error("Error accessing microphone:", error);
+          setError(
+            "Failed to access microphone. Please check your permissions."
           );
-          setInputValue(response.data.transcription);
-          setIsTyping(true);
-          adjustTextareaHeight();
-        } catch (error) {
-          console.error("Transcription error:", error);
-          setError("Failed to transcribe audio. Please try again.");
-        }
-
-        setIsListening(false);
-      };
-
-      mediaRecorder.start();
-      setTimeout(() => mediaRecorder.stop(), 5000); // Record for 5 seconds
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-      setError("Failed to access microphone. Please check your permissions.");
-      setIsListening(false);
+        });
     }
-  }, [setInputValue, setIsTyping, adjustTextareaHeight, setError]);
+  }, [isRecording, setInputValue, adjustTextareaHeight, setError]);
 
   return (
-    <div className="w-full px-4 pb-4 bg-background">
-      <div
-        className="flex space-x-2 pt-2 mb-4 overflow-x-auto whitespace-nowrap scrollbar-hide"
-        style={{
-          msOverflowStyle: "none",
-          scrollbarWidth: "none",
-        }}
-      >
-        <style>{`
-          div::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-        {!isTyping && (
-          <>
-            <Button
-              variant="secondary"
-              className="flex-shrink-0 h-12 bg-secondary/80 text-secondary-foreground"
-            >
-              <span className="truncate">
-                Tell me the country with the most Olympic athletes
-              </span>
-            </Button>
-            <Button
-              variant="secondary"
-              className="flex-shrink-0 h-12 bg-secondary/80 text-secondary-foreground"
-            >
-              <span className="truncate">Give me tips to overcome procr</span>
-            </Button>
-          </>
-        )}
-      </div>
+    <div className="w-full px-4 pb-4 bg-background pt-3">
+      {/* <FooterSuggestedPrompts inputValue={inputValue} /> */}
       <div className="flex items-center space-x-2 relative">
-        <Button variant="outline" size="icon" className="shrink-0">
-          <Plus className="h-4 w-4" />
-        </Button>
-
-        <div className="relative flex-grow">
-          <Textarea
-            ref={textareaRef}
-            value={inputValue}
-            onChange={handleInputChange}
-            placeholder="Message"
-            className="flex-grow bg-background max-h-[300px] overflow-y-auto w-full resize-none pr-10"
-            style={{
-              minHeight: "40px",
-              height: "auto",
-              maxHeight: "300px",
-              overflowX: "hidden",
-              overflowY: "auto",
-              whiteSpace: "pre-wrap",
-              wordWrap: "break-word",
-            }}
-          />
-          {!inputValue && (
-            <button
-              className="absolute right-2 bottom-2 p-1 text-gray-800"
-              onClick={handleMicrophoneClick}
-              disabled={isListening}
-            >
-              <Mic
-                className={`h-4 w-4 ${
-                  isListening ? "animate-pulse text-red-500" : ""
-                }`}
-              />
-            </button>
-          )}
-        </div>
-
-        {isTyping ? (
+        {/* <FooterAddMediaToPrompt /> */}
+        <FooterInputTextPrompt
+          textareaRef={textareaRef}
+          inputValue={inputValue}
+          handleInputChange={handleInputChange}
+          handleTranscribeAudio={handleTranscribeAudio}
+          isRecording={isRecording}
+          isProcessingTranscription={isProcessingTranscription}
+          isVADSpeechDetected={isVADSpeechDetected}
+        />
+        {inputValue ? (
           <Button
             variant="outline"
             size="icon"
             className="shrink-0"
-            onClick={handleSend}
+            onClick={handleSendTextCommand}
             disabled={isProcessing}
           >
             {isProcessing ? (

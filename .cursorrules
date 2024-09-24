@@ -1,5 +1,21 @@
 # Project Context File
 
+## LLM Interpretation System Design
+
+graph TD
+A[Voice Input] --> B[Speech-to-Text]
+B --> C[Text Preprocessing]
+C --> D[Intent Classification]
+D --> E{Is Intent Clear?}
+E -->|Yes| F[Entity Extraction]
+E -->|No| G[Clarification Request]
+F --> H[Command Validation]
+H --> I{Is Command Valid?}
+I -->|Yes| J[Execute CRUD Operation]
+I -->|No| K[Error Handling]
+G --> L[User Feedback Loop]
+L --> C
+
 ## Project Overview
 
 A web-based inventory management system tailored for busy cafe owners and staff. It leverages voice control capabilities to streamline inventory tasks, allowing users to manage inventory through simple speech commands. Key features include:
