@@ -258,7 +258,7 @@ Step 7: User Feedback
    Technology: SQL-based database (e.g., PostgreSQL, SQLite) or a NoSQL database if needed.
    Task: Store and update the inventory data in response to CRUD operations.
 
-8. Embedding Update Service
+8. Embedding Update Service (could be handled by the Embedding Generation Service)
    Function: Generates and updates embeddings for new or modified inventory items as they are added or changed.
    Technology: OpenAI API or another model, combined with an automated backend process.
    Task: Automatically create embeddings for new products and update the vector database in real-time.
@@ -274,6 +274,33 @@ Step 7: User Feedback
     Task: Handle edge cases, ensure valid inputs, and prevent issues like incorrect stock levels or unauthorized actions.
 
 11. Authentication and Authorization Service
+    Voice passphrase.
     Function: Manages user logins and permissions for different actions within the system.
     Technology: OAuth, JWT (JSON Web Tokens), or session-based authentication.
     Task: Ensure that only authorized users can make inventory changes or query the system.
+
+Just downloaded the app. Onboarding and tutorail. The user is introduced with a voice guided tutorial.
+The user creates an account through email and password which is verified by email.
+The user is asked to setup their business profile through voice commands.
+Initial inventory setup - the app asks the user to start adding inventory items one by one.
+
+Voice activated inventory entry.
+The user speaks item details, like name quantity and category.
+Ongoing inventory maangement.
+Voice queries and reports.
+
+Once the inital setup is complete, the user can update their inventory through voice commands.
+What's the matter?
+
+Streaming ASR (Automatic Speech Recognition). You need websockets. The client, captures the audio and sends the audio to the server.
+The ASR Low latency server. NLP to
+Real-time TTS.
+
+Client - websocket - server.
+
+VAD - Voice Activity Detection.
+
+1. continous listening through the listening, buffering so that it includes the whole utterance.
+2. Start recording the buffered audio to start recording the beginning of the speech.
+3. By implementing VAD with buffering and recording the
+   buffering means that a small audio
