@@ -1,11 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "../../api/apiClient";
-import { RootState } from "../../redux/store";
-// id: user.id,
-//         email: user.email,
-//         role: user.role,
-//         isEmailVerified: user.isEmailVerified,
+import { RootState } from "../../store";
 
 interface User {
   id: string;

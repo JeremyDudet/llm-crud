@@ -4,7 +4,7 @@ import ReactDOM from "react-dom/client";
 // Import your css
 import "./styles/index.css";
 // Import your store
-import { store } from "./redux/store";
+import { store } from "./store";
 import { Provider as StoreProvider } from "react-redux";
 // Import your query client
 import { QueryClientProvider } from "@tanstack/react-query";

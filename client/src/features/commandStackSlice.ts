@@ -16,12 +16,12 @@ const commandStackSlice = createSlice({
     addCommand(state, action: PayloadAction<InterpretedCommand>) {
       state.commands.push(action.payload);
     },
-    removeCommand(state, action: PayloadAction<string>) {
+    removeCommand(state, action: PayloadAction<number>) {
       state.commands = state.commands.filter(
         (command) => command.id !== action.payload
       );
     },
-    executeCommand(state, action: PayloadAction<string>) {
+    executeCommand(state, action: PayloadAction<number>) {
       const command = state.commands.find((cmd) => cmd.id === action.payload);
       if (command) {
         command.processed = true;
@@ -30,7 +30,7 @@ const commandStackSlice = createSlice({
     updateCommand(
       state,
       action: PayloadAction<{
-        id: string;
+        id: number;
         changes: Partial<InterpretedCommand>;
       }>
     ) {

@@ -1,7 +1,7 @@
 // src/middleware/auth.ts
 import { Request, Response, NextFunction } from "express";
 import AuthService from "../services/AuthService";
-import { User } from "../database/schema";
+import { users } from "../database/schema";
 
 interface AuthRequest extends Request {
   user?: { id: number };
@@ -25,7 +25,7 @@ export const authenticateToken = (
 };
 
 interface AuthenticatedRequest extends Request {
-  user?: typeof User;
+  user?: typeof users;
 }
 
 export const requireRole = (roles: string | string[]) => {

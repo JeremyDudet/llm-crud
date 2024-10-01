@@ -1,9 +1,9 @@
-import { useDispatch } from "react-redux";
+import { useAppDispatch } from "./index";
 import { clearUser } from "../features/user/userSlice";
 import { useNavigate } from "react-router-dom";
 
 export const useLogout = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const logout = () => {

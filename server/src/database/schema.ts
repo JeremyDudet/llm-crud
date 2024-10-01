@@ -1,7 +1,7 @@
 import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
-export const users = sqliteTable("user", {
+export const User = sqliteTable("user", {
   id: integer("id").primaryKey(),
   passwordHash: text("password_hash").notNull(),
   firstName: text("first_name"),
@@ -27,14 +27,15 @@ export const users = sqliteTable("user", {
 });
 
 // Modified items table
-export const items = sqliteTable("item", {
+export const Item = sqliteTable("item", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
   par: real("par").notNull(),
   unitOfMeasureId: integer("unit_of_measure_id").references(
-    () => unitOfMeasures.id
+    () => UnitOfMeasure.id
   ),
   reorderPoint: real("reorder_point").notNull(),
+  // add vendors
   stockCheckFrequency: integer("stock_check_frequency").notNull(),
   description: text("description"),
   leadTime: integer("lead_time"),
@@ -49,7 +50,7 @@ export const items = sqliteTable("item", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const commands = sqliteTable("command", {
+export const Command = sqliteTable("command", {
   id: integer("id").primaryKey(),
   text: text("text").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -58,7 +59,7 @@ export const commands = sqliteTable("command", {
 });
 
 // InventoryCount table
-export const inventoryCounts = sqliteTable("inventory_count", {
+export const InventoryCount = sqliteTable("inventory_count", {
   id: integer("id").primaryKey(),
   count: real("count").notNull(), // this is the count of the item
   checkedAt: integer("checked_at", { mode: "timestamp" }), // this is the timestamp for when the item was checked off the shopping list
@@ -67,10 +68,10 @@ export const inventoryCounts = sqliteTable("inventory_count", {
     .default(sql`CURRENT_TIMESTAMP`), // this is the timestamp for when the item was counted
   itemId: integer("item_id")
     .notNull()
-    .references(() => items.id, { onDelete: "cascade" }), // this is the id of the item that was counted
+    .references(() => Item.id, { onDelete: "cascade" }), // this is the id of the item that was counted
   userId: integer("user_id")
     .notNull()
-    .references(() => users.id), // this is the id of the user that performed the count
+    .references(() => User.id), // this is the id of the user that performed the count
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
@@ -79,7 +80,7 @@ export const inventoryCounts = sqliteTable("inventory_count", {
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const vendors = sqliteTable("vendor", {
+export const Vendor = sqliteTable("vendor", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
   pointOfContact: text("point_of_contact"),
@@ -97,9 +98,9 @@ export const vendors = sqliteTable("vendor", {
 });
 
 // A receipt is a document that records the purchase of items from a vendor
-export const receipts = sqliteTable("receipt", {
+export const Receipt = sqliteTable("receipt", {
   id: integer("id").primaryKey(),
-  vendorId: integer("vendor_id").references(() => vendors.id),
+  vendorId: integer("vendor_id").references(() => Vendor.id),
   date: integer("date", { mode: "timestamp" }).notNull(),
   totalAmount: real("total_amount").notNull(),
   imageUrl: text("image_url"),
@@ -112,18 +113,18 @@ export const receipts = sqliteTable("receipt", {
 });
 
 // New table for tracking item costs over time
-export const itemCosts = sqliteTable("item_cost", {
+export const ItemCost = sqliteTable("item_cost", {
   id: integer("id").primaryKey(),
-  itemId: integer("item_id").references(() => items.id),
+  itemId: integer("item_id").references(() => Item.id),
   cost: real("cost").notNull(),
   date: integer("date", { mode: "timestamp" }).notNull(),
-  receiptId: integer("receipt_id").references(() => receipts.id),
+  receiptId: integer("receipt_id").references(() => Receipt.id),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
-export const unitOfMeasures = sqliteTable("unit_of_measure", {
+export const UnitOfMeasure = sqliteTable("unit_of_measure", {
   id: integer("id").primaryKey(),
   name: text("name").notNull(),
   abbreviation: text("abbreviation").notNull(),
@@ -136,10 +137,10 @@ export const unitOfMeasures = sqliteTable("unit_of_measure", {
 });
 
 // Junction table to store item details for each receipt
-export const receiptItems = sqliteTable("receipt_item", {
+export const ReceiptItem = sqliteTable("receipt_item", {
   id: integer("id").primaryKey(),
-  receiptId: integer("receipt_id").references(() => receipts.id),
-  itemId: integer("item_id").references(() => items.id),
+  receiptId: integer("receipt_id").references(() => Receipt.id),
+  itemId: integer("item_id").references(() => Item.id),
   quantity: real("quantity").notNull(),
   unitPrice: real("unit_price").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
@@ -151,80 +152,77 @@ export const receiptItems = sqliteTable("receipt_item", {
 });
 
 // ItemVendors Junction Table
-export const itemVendors = sqliteTable("item_vendor", {
+export const ItemVendor = sqliteTable("item_vendor", {
   id: integer("id").primaryKey(),
-  itemId: integer("item_id").references(() => items.id),
-  vendorId: integer("vendor_id").references(() => vendors.id),
+  itemId: integer("item_id").references(() => Item.id),
+  vendorId: integer("vendor_id").references(() => Vendor.id),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP`),
 });
 
 // This is a relation to the receipts table
-export const vendorRelations = relations(vendors, ({ many }) => ({
-  receipts: many(receipts),
-  itemVendors: many(itemVendors),
+export const VendorRelation = relations(Vendor, ({ many }) => ({
+  receipts: many(Receipt),
+  itemVendors: many(ItemVendor),
 }));
 
-export const receiptRelations = relations(receipts, ({ one, many }) => ({
-  vendor: one(vendors, {
-    fields: [receipts.vendorId],
-    references: [vendors.id],
+export const ReceiptRelation = relations(Receipt, ({ one, many }) => ({
+  vendor: one(Vendor, {
+    fields: [Receipt.vendorId],
+    references: [Vendor.id],
   }),
-  itemCosts: many(itemCosts),
+  itemCosts: many(ItemCost),
 }));
 
-export const itemRelations = relations(items, ({ many, one }) => ({
-  receiptItems: many(receiptItems),
-  inventoryCounts: many(inventoryCounts),
-  unitOfMeasure: one(unitOfMeasures, {
-    fields: [items.unitOfMeasureId],
-    references: [unitOfMeasures.id],
+export const ItemRelation = relations(Item, ({ many, one }) => ({
+  receiptItems: many(ReceiptItem),
+  inventoryCounts: many(InventoryCount),
+  unitOfMeasure: one(UnitOfMeasure, {
+    fields: [Item.unitOfMeasureId],
+    references: [UnitOfMeasure.id],
   }),
-  itemVendors: many(itemVendors),
-  itemCosts: many(itemCosts),
+  itemVendors: many(ItemVendor),
+  itemCosts: many(ItemCost),
 }));
 
-export const receiptItemRelations = relations(receiptItems, ({ one }) => ({
-  receipt: one(receipts, {
-    fields: [receiptItems.receiptId],
-    references: [receipts.id],
+export const ReceiptItemRelation = relations(ReceiptItem, ({ one }) => ({
+  receipt: one(Receipt, {
+    fields: [ReceiptItem.receiptId],
+    references: [Receipt.id],
   }),
-  item: one(items, {
-    fields: [receiptItems.itemId],
-    references: [items.id],
+  item: one(Item, {
+    fields: [ReceiptItem.itemId],
+    references: [Item.id],
   }),
 }));
 
-export const userRelations = relations(users, ({ many }) => ({
-  inventoryCounts: many(inventoryCounts),
+export const UserRelation = relations(User, ({ many }) => ({
+  inventoryCounts: many(InventoryCount),
 }));
 
-export const inventoryCountRelations = relations(
-  inventoryCounts,
-  ({ one }) => ({
-    item: one(items, {
-      fields: [inventoryCounts.itemId],
-      references: [items.id],
-    }),
-    user: one(users, {
-      fields: [inventoryCounts.userId],
-      references: [users.id],
-    }),
-  })
-);
-
-export const unitOfMeasureRelations = relations(unitOfMeasures, ({ many }) => ({
-  items: many(items),
-}));
-
-export const itemVendorRelations = relations(itemVendors, ({ one }) => ({
-  item: one(items, {
-    fields: [itemVendors.itemId],
-    references: [items.id],
+export const InventoryCountRelation = relations(InventoryCount, ({ one }) => ({
+  item: one(Item, {
+    fields: [InventoryCount.itemId],
+    references: [Item.id],
   }),
-  vendor: one(vendors, {
-    fields: [itemVendors.vendorId],
-    references: [vendors.id],
+  user: one(User, {
+    fields: [InventoryCount.userId],
+    references: [User.id],
+  }),
+}));
+
+export const UnitOfMeasureRelation = relations(UnitOfMeasure, ({ many }) => ({
+  items: many(Item),
+}));
+
+export const ItemVendorRelation = relations(ItemVendor, ({ one }) => ({
+  item: one(Item, {
+    fields: [ItemVendor.itemId],
+    references: [Item.id],
+  }),
+  vendor: one(Vendor, {
+    fields: [ItemVendor.vendorId],
+    references: [Vendor.id],
   }),
 }));

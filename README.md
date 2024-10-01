@@ -304,3 +304,7 @@ VAD - Voice Activity Detection.
 2. Start recording the buffered audio to start recording the beginning of the speech.
 3. By implementing VAD with buffering and recording the
    buffering means that a small audio
+
+---
+
+Creating new Inventory Items using voice.

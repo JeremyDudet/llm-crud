@@ -1,11 +1,13 @@
 import { configureStore } from "@reduxjs/toolkit";
-import userReducer from "../features/user/userSlice";
-import commandStackReducer from "../features/commandStackSlice";
+import userReducer from "./features/user/userSlice";
+import commandStackReducer from "./features/commandStackSlice";
+import chatReducer from "./features/llmChat/llmChatSlice";
+
 export const store = configureStore({
   reducer: {
     user: userReducer,
     commandStack: commandStackReducer,
-    // Add other reducers here as needed
+    chat: chatReducer,
   },
   devTools: process.env.NODE_ENV !== "production",
 });

@@ -3,7 +3,6 @@ import { preprocessText } from "../services/TextPreprocessingService";
 import { interpretCommand } from "../services/TextInterpretationService";
 import { validateCommand } from "../services/CommandValidationService";
 import { executeCommand } from "../services/CommandExecutionService";
-import { generateResponse } from "../services/ResponseGenerationService";
 
 export async function processTextCommand(
   req: Request,
@@ -33,7 +32,12 @@ export async function processTextCommand(
     const executionResult = await executeCommand(interpretedCommand);
 
     // Generate response
-    const response = generateResponse(executionResult);
+    const response = [
+      {
+        type: "text",
+        text: "Hello, this is a test response.",
+      },
+    ];
 
     res.json({ response });
   } catch (error) {

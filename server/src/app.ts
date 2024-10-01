@@ -3,13 +3,17 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
+import { appRouter } from "./trpc";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { createContext } from "./trpc/context";
 import { db } from "./database";
 import { users } from "./database/schema";
-import userRoutes from "./routes/userRoutes";
+import userRoutes from "./routes/users";
 import authRoutes from "./routes/authRoutes";
 import processCommandRoutes from "./routes/processCommandRoutes";
 import transcribeAudioRoutes from "./routes/transcribeAudioRoutes";
 import processTextCommandRoutes from "./routes/processTextCommandRoutes";
+import itemRoutes from "./routes/items";
 
 dotenv.config();
 
@@ -34,12 +38,14 @@ db.select()
     process.exit(1);
   });
 
-// Routes
-app.use("/api/users", userRoutes);
-app.use("/api/auth", authRoutes);
-
-app.use("/api/transcribe-audio", transcribeAudioRoutes);
-app.use("/api/process-text-command", processTextCommandRoutes);
+// tRPC middleware
+app.use(
+  "/trpc",
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  })
+);
 
 // Basic route for testing
 app.get("/", (req, res) => {

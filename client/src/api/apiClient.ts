@@ -1,6 +1,6 @@
 // src/api/apiClient.ts
 import axios from "axios";
-import { store } from "../redux/store";
+import { store } from "../store";
 import { clearUser } from "../features/user/userSlice";
 
 const baseURL = import.meta.env.REACT_APP_API_URL || "http://localhost:3000";

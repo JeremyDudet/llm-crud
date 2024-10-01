@@ -9,7 +9,7 @@ import {
   setError,
 } from "../../features/user/userSlice";
 import { useSelector } from "react-redux";
-import { RootState } from "../../redux/store";
+import { RootState } from "../../store";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");

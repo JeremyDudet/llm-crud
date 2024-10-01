@@ -1,5 +1,5 @@
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Loader2, StopCircle } from "lucide-react";
+import { Mic, Loader2, CircleStop } from "lucide-react";
 
 function FooterInputTextPrompt({
   textareaRef,
@@ -45,8 +45,8 @@ function FooterInputTextPrompt({
           {isProcessingTranscription ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isRecording ? (
-            <StopCircle
-              className={`h-4 w-4 text-red-500 ${
+            <CircleStop
+              className={`h-5 w-5  ${
                 isVADSpeechDetected ? "animate-pulse" : ""
               }`}
             />

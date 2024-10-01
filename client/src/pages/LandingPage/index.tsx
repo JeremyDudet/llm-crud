@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
+import { RootState } from "@/store";
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

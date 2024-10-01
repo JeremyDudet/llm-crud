@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "@/redux/store";
+import { RootState } from "@/store";
 import AppShell from "@/components/AppShell";
 import { fetchUserData } from "@/features/user/userSlice";
-import { AppDispatch } from "@/redux/store";
+import { AppDispatch } from "@/store";
 
 const Profile: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();

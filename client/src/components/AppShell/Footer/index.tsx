@@ -5,7 +5,7 @@ import apiClient from "@/api/apiClient";
 import { useDispatch } from "react-redux";
 import { addCommand } from "@/features/commandStackSlice";
 import { Button } from "@/components/ui/button";
-import { Send, Headphones } from "lucide-react";
+import { Send, AudioLines } from "lucide-react";
 import FooterInputTextPrompt from "./FooterInputTextPrompt";
 
 // Type declarations (unchanged)
@@ -371,7 +371,7 @@ export default function Footer() {
   }, [isRecording, setInputValue, adjustTextareaHeight, setError]);
 
   return (
-    <div className="w-full px-4 pb-4 bg-background pt-3">
+    <div className="max-w-3xl mx-auto w-full px-4 pb-4 bg-background pt-3">
       {/* <FooterSuggestedPrompts inputValue={inputValue} /> */}
       <div className="flex items-center space-x-2 relative">
         {/* <FooterAddMediaToPrompt /> */}
@@ -413,7 +413,7 @@ export default function Footer() {
             {isVADLoading ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <Headphones className="h-4 w-4" />
+              <AudioLines className="h-4 w-4" />
             )}
           </Button>
         )}

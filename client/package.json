@@ -21,6 +21,7 @@
     "@ricky0123/vad-web": "^0.0.18",
     "@tanstack/react-query": "^5.52.2",
     "@tanstack/react-query-devtools": "^5.52.2",
+    "@trpc/client": "^11.0.0-rc.553",
     "axios": "^1.7.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
