@@ -12,7 +12,24 @@ export class ItemService {
   }
 
   async createItem(itemData: Partial<typeof Item.$inferInsert>) {
-    return db.insert(Item).values(itemData).returning();
+    const requiredFields = [
+      "name",
+      "par",
+      "reorderPoint",
+      "stockCheckFrequency",
+    ] as const;
+    const missingFields = requiredFields.filter(
+      (field) => !(field in itemData)
+    );
+
+    if (missingFields.length > 0) {
+      throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+    }
+
+    return db
+      .insert(Item)
+      .values(itemData as typeof Item.$inferInsert)
+      .returning();
   }
 
   async updateItem(id: number, updates: Partial<typeof Item.$inferInsert>) {
