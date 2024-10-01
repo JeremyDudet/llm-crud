@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { db } from "../database";
-import { users } from "../database/schema";
+import { User } from "../database/schema";
 import { eq, gt, and } from "drizzle-orm";
 import dotenv from "dotenv";
 import crypto from "crypto";
@@ -24,8 +24,8 @@ export default class AuthService {
     try {
       const existingUser = await db
         .select()
-        .from(users)
-        .where(eq(users.email, email))
+        .from(User)
+        .where(eq(User.email, email))
         .get();
       if (existingUser) {
         throw new Error("Email already in use");
@@ -33,7 +33,7 @@ export default class AuthService {
 
       const hashedPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
       const newUser = await db
-        .insert(users)
+        .insert(User)
         .values({
           email,
           passwordHash: hashedPassword,
@@ -53,12 +53,12 @@ export default class AuthService {
     password: string
   ): Promise<{
     token: string;
-    user: Partial<typeof users.$inferSelect>;
+    user: Partial<typeof User.$inferSelect>;
   } | null> {
     const user = await db
       .select()
-      .from(users)
-      .where(eq(users.email, email))
+      .from(User)
+      .where(eq(User.email, email))
       .get();
     if (!user) return null;
 
@@ -72,7 +72,7 @@ export default class AuthService {
         { expiresIn: "12h" }
       );
 
-      const userData: Partial<typeof users.$inferSelect> = {
+      const userData: Partial<typeof User.$inferSelect> = {
         id: user.id,
         email: user.email,
         role: user.role,
@@ -99,11 +99,7 @@ export default class AuthService {
     oldPassword: string,
     newPassword: string
   ): Promise<boolean> {
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .get();
+    const user = await db.select().from(User).where(eq(User.id, userId)).get();
     if (!user) return false;
 
     const isPasswordValid = await bcrypt.compare(
@@ -114,9 +110,9 @@ export default class AuthService {
 
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
     await db
-      .update(users)
+      .update(User)
       .set({ passwordHash: newHashedPassword })
-      .where(eq(users.id, userId))
+      .where(eq(User.id, userId))
       .run();
     return true;
   }
@@ -124,8 +120,8 @@ export default class AuthService {
   static async resetPasswordRequest(email: string): Promise<void> {
     const user = await db
       .select()
-      .from(users)
-      .where(eq(users.email, email))
+      .from(User)
+      .where(eq(User.email, email))
       .get();
     if (!user) return;
 
@@ -133,12 +129,12 @@ export default class AuthService {
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
     await db
-      .update(users)
+      .update(User)
       .set({
         resetPasswordToken: resetToken,
         resetPasswordExpires: resetTokenExpiry,
       })
-      .where(eq(users.id, user.id))
+      .where(eq(User.id, user.id))
       .run();
 
     await sendPasswordResetEmail(email, resetToken);
@@ -150,11 +146,11 @@ export default class AuthService {
   ): Promise<boolean> {
     const user = await db
       .select()
-      .from(users)
+      .from(User)
       .where(
         and(
-          eq(users.resetPasswordToken, token),
-          gt(users.resetPasswordExpires, new Date())
+          eq(User.resetPasswordToken, token),
+          gt(User.resetPasswordExpires, new Date())
         )
       )
       .get();
@@ -163,13 +159,13 @@ export default class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db
-      .update(users)
+      .update(User)
       .set({
         passwordHash: hashedPassword,
         resetPasswordToken: null,
         resetPasswordExpires: null,
       })
-      .where(eq(users.id, user.id))
+      .where(eq(User.id, user.id))
       .run();
 
     return true;
@@ -178,18 +174,18 @@ export default class AuthService {
   static async verifyEmail(token: string): Promise<boolean> {
     const user = await db
       .select()
-      .from(users)
-      .where(eq(users.emailVerificationToken, token))
+      .from(User)
+      .where(eq(User.emailVerificationToken, token))
       .get();
     if (!user) return false;
 
     await db
-      .update(users)
+      .update(User)
       .set({
         isEmailVerified: true,
         emailVerificationToken: null,
       })
-      .where(eq(users.id, user.id))
+      .where(eq(User.id, user.id))
       .run();
 
     return true;
@@ -200,9 +196,9 @@ export default class AuthService {
       expiresIn: "7d",
     });
     await db
-      .update(users)
+      .update(User)
       .set({ refreshToken })
-      .where(eq(users.id, userId))
+      .where(eq(User.id, userId))
       .run();
     return refreshToken;
   }
@@ -216,9 +212,9 @@ export default class AuthService {
       };
       const user = await db
         .select()
-        .from(users)
+        .from(User)
         .where(
-          and(eq(users.id, decoded.id), eq(users.refreshToken, refreshToken))
+          and(eq(User.id, decoded.id), eq(User.refreshToken, refreshToken))
         )
         .get();
 

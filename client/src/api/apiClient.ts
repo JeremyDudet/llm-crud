@@ -3,7 +3,7 @@ import axios from "axios";
 import { store } from "../store";
 import { clearUser } from "../features/user/userSlice";
 
-const baseURL = import.meta.env.REACT_APP_API_URL || "http://localhost:3000";
+const baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 const apiClient = axios.create({
   baseURL,

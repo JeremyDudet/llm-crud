@@ -3,11 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
-import { appRouter } from "./trpc";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { createContext } from "./trpc/context";
 import { db } from "./database";
-import { users } from "./database/schema";
+import { User } from "./database/schema";
 import userRoutes from "./routes/users";
 import authRoutes from "./routes/authRoutes";
 import processCommandRoutes from "./routes/processCommandRoutes";
@@ -21,14 +18,19 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://llm-crud.vercel.app/"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
 
 // Database connection check
 db.select()
-  .from(users)
+  .from(User)
   .limit(1)
   .then(() => {
     console.log("Database connected successfully");
@@ -38,14 +40,13 @@ db.select()
     process.exit(1);
   });
 
-// tRPC middleware
-app.use(
-  "/trpc",
-  createExpressMiddleware({
-    router: appRouter,
-    createContext,
-  })
-);
+// Routes
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/process-command", processCommandRoutes);
+app.use("/api/transcribe-audio", transcribeAudioRoutes);
+app.use("/api/process-text-command", processTextCommandRoutes);
+app.use("/api/items", itemRoutes);
 
 // Basic route for testing
 app.get("/", (req, res) => {

@@ -185,13 +185,15 @@ export default function Footer() {
                 console.log("Dispatching addCommand:", interpretedCommand);
                 dispatch(
                   addCommand({
-                    id: interpretedCommand.id,
+                    id: Date.now(), // Generate a unique ID
                     action: interpretedCommand.action as ValidAction,
                     itemName: interpretedCommand.item,
                     quantity: interpretedCommand.quantity,
                     unitOfMeasureName: interpretedCommand.unit,
                     processed: false,
-                    rawCommand: transcription,
+                    status: "valid", // Add this field
+                    itemId: 0, // Add this field with a default value
+                    unitOfMeasureId: 0, // Add this field with a default value
                   })
                 );
               } else {

@@ -1,7 +1,7 @@
 // src/controllers/AuthController.ts
 import { Request, Response } from "express";
 import AuthService from "../services/AuthService";
-import { users } from "../database/schema";
+import { User } from "../database/schema";
 import { db } from "../database";
 import { eq } from "drizzle-orm";
 
@@ -161,8 +161,8 @@ export class AuthController {
     try {
       const user = await db
         .select()
-        .from(users)
-        .where(eq(users.id, req.user.id))
+        .from(User)
+        .where(eq(User.id, req.user.id))
         .get();
       if (!user) {
         res.status(404).json({ message: "User not found" });
