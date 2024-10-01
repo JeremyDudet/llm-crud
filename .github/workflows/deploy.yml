@@ -1,29 +1,29 @@
 name: Deploy to DigitalOcean
 
-   on:
-     push:
-       branches:
-         - main
-       paths:
-         - 'server/**'
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "server/**"
 
-   jobs:
-     deploy:
-       runs-on: ubuntu-latest
-       steps:
-       - uses: actions/checkout@v2
-       - name: Deploy to DigitalOcean
-         env:
-           PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
-           HOST: ${{ secrets.SERVER_IP }}
-           USER: ${{ secrets.SERVER_USER }}
-         run: |
-           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
-           ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
-             cd /root/llm-crud/server &&
-             git pull origin main &&
-             npm install &&
-             npm run generate &&
-             npm run push &&
-             pm2 restart ecosystem.config.cjs --update-env
-           '
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Deploy to DigitalOcean
+        env:
+          PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST: ${{ secrets.SERVER_IP }}
+          USER: ${{ secrets.SERVER_USER }}
+        run: |
+          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          ssh -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
+            cd /root/llm-crud/server &&
+            git pull origin main &&
+            npm install &&
+            npm run generate &&
+            npm run push &&
+            pm2 restart ecosystem.config.cjs --update-env
+          '
