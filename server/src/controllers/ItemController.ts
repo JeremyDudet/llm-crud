@@ -52,8 +52,8 @@ export class ItemController {
   async deleteItem(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const deleteCount = await ItemService.deleteItem(id);
-      if (deleteCount > 0) {
+      const result = await ItemService.deleteItem(id);
+      if (result.changes > 0) {
         res.status(204).send();
       } else {
         res.status(404).json({ message: "Item not found" });
