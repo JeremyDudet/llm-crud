@@ -11,7 +11,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
           <div className="mx-auto px-4 sm:px-6 lg:px-8 py-10">{children}</div>
         </main>
       </div>
-
       <div className="fixed bottom-0 w-full border-t bg-background border-gray-300">
         <Footer />
       </div>

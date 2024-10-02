@@ -10,4 +10,5 @@ export interface InterpretedCommand {
   count?: number;
   status: "valid" | "invalid";
   error?: string;
+  rawCommand: string; // Add this line
 }

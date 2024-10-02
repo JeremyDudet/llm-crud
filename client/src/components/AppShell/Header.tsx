@@ -1,6 +1,6 @@
-import { useLogout } from "../../hooks/useLogout";
+import { useLogout } from "@/hooks/useLogout";
 import { useSelector } from "react-redux";
-import { RootState } from "../../store";
+import { RootState } from "@/store";
 import {
   Disclosure,
   DisclosureButton,
@@ -62,16 +62,7 @@ export default function Header() {
         <div className="flex h-14 justify-between">
           <div className="flex">
             <Link to="/" className="flex flex-shrink-0 items-center">
-              <img
-                alt="Your Company"
-                src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-                className="block h-8 w-auto lg:hidden"
-              />
-              <img
-                alt="Your Company"
-                src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-                className="hidden h-8 w-auto lg:block"
-              />
+              <h1 className="font-bold">LLM CHAT</h1>
             </Link>
             <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">
               {navigation.map((item) => (

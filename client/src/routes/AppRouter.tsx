@@ -2,14 +2,16 @@
 // Function: Define main routing configuration.
 // Expected Output: Router component with route definitions.
 
-import LandingPage from "../pages/LandingPage/index";
-import Login from "../pages/Login/index";
-import Profile from "../pages/Profile/index";
-import NotFound from "../pages/NotFound/index";
-import CreateAccount from "../pages/CreateAccount/index";
+import LandingPage from "../pages/LandingPage";
+import Login from "../pages/Login";
+import Profile from "../pages/Profile";
+import NotFound from "../pages/NotFound";
+import CreateAccount from "../pages/CreateAccount";
 import PrivateRoute from "./PrivateRoute";
-import Dashboard from "../pages/Dashboard/index";
-import ForgotPassword from "../pages/ForgotPassword/index";
+import Dashboard from "../pages/Dashboard";
+import Library from "../pages/Library";
+import Analytics from "../pages/Analytics";
+import ForgotPassword from "../pages/ForgotPassword";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 const router = createBrowserRouter([
@@ -38,6 +40,22 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Dashboard />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/library",
+    element: (
+      <PrivateRoute>
+        <Library />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/analytics",
+    element: (
+      <PrivateRoute>
+        <Analytics />
       </PrivateRoute>
     ),
   },

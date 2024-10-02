@@ -11,4 +11,5 @@ export interface InterpretedCommand {
   status: "valid" | "invalid";
   error?: string;
   processed: boolean;
+  rawCommand: string; // Add this line
 }
