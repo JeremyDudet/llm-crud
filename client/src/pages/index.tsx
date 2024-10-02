@@ -1,7 +1,7 @@
 // src/pages/index.tsx
 import AppShell from "@/components/AppShell";
 import { useSelector } from "react-redux";
-import { RootState } from "@/redux/store.ts";
+import { RootState } from "@/store.ts";
 
 const Home: React.FC = () => {
   const user = useSelector((state: RootState) => state.user);
