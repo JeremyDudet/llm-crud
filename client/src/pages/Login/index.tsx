@@ -40,11 +40,19 @@ const Login: React.FC = () => {
     } catch (err: unknown) {
       console.error("Login error:", err);
       if (err instanceof Error) {
-        dispatch(
-          setError(
-            "Failed to login. Please check your credentials and try again."
-          )
-        );
+        if (err.message.includes("ERR_BLOCKED_BY_CLIENT")) {
+          dispatch(
+            setError(
+              "Login request was blocked. This could be due to an ad blocker or security extension. Please disable it for this site and try again."
+            )
+          );
+        } else {
+          dispatch(
+            setError(
+              "Failed to login. Please check your credentials and try again."
+            )
+          );
+        }
       }
     } finally {
       dispatch(setLoading(false));
@@ -60,11 +68,6 @@ const Login: React.FC = () => {
         ← Back
       </button>
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-        <img
-          alt="Your Company"
-          src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
-          className="mx-auto h-10 w-auto"
-        />
         <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
           Sign in to your account
         </h2>
