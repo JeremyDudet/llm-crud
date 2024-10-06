@@ -4,7 +4,7 @@ import AuthService from "../services/AuthService";
 import { User } from "../database/schema";
 import { db } from "../database";
 import { eq } from "drizzle-orm";
-
+import jwt from "jsonwebtoken";
 interface AuthRequest extends Request {
   user?: { id: number };
 }
@@ -148,17 +148,25 @@ export class AuthController {
     }
   }
 
-  async getCurrentUser(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.user) {
-      res.status(401).json({ message: "Unauthorized" });
+  // GET /api/auth/me
+  // This route is used to get the current user's data by decoding the JWT token
+  async getCurrentUser(req: Request, res: Response): Promise<void> {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+      res.status(401).json({ message: "No token provided" });
       return;
     }
 
     try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+        id: number;
+      };
       const users = await db
         .select()
         .from(User)
-        .where(eq(User.id, req.user.id))
+        .where(eq(User.id, decoded.id))
         .execute();
 
       if (users.length === 0) {
@@ -175,7 +183,8 @@ export class AuthController {
         isEmailVerified: user.isEmailVerified,
       });
     } catch (error) {
-      res.status(500).json({ message: "Error fetching user data", error });
+      console.error("Error fetching user data:", error);
+      res.status(401).json({ message: "Invalid token" });
     }
   }
 }

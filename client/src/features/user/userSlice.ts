@@ -49,6 +49,7 @@ export const fetchUserData = createAsyncThunk(
     const { user } = getState() as RootState;
     const token = user.token || localStorage.getItem("token");
     if (!token) {
+      console.log("No token found");
       return rejectWithValue("No token found");
     }
     try {

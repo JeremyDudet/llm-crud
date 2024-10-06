@@ -13,6 +13,7 @@ import Library from "../pages/Library";
 import Analytics from "../pages/Analytics";
 import ForgotPassword from "../pages/ForgotPassword";
 import ChatThread from "@/pages/ChatThread";
+import CheckoutPage from "@/pages/Checkout";
 
 const router = createBrowserRouter([
   {
@@ -72,6 +73,15 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Profile />
+      </PrivateRoute>
+    ),
+    errorElement: <NotFound />,
+  },
+  {
+    path: "/checkout",
+    element: (
+      <PrivateRoute>
+        <CheckoutPage />
       </PrivateRoute>
     ),
     errorElement: <NotFound />,
