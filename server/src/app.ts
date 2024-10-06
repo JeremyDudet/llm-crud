@@ -24,6 +24,8 @@ const port = Number(process.env.PORT);
 app.use(
   cors({
     origin: ["http://localhost:5173", "https://llm-crud.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   })
 );
