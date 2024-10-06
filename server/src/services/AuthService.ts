@@ -7,6 +7,7 @@ import { eq, gt, and } from "drizzle-orm";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "../utils/emailService";
+import { ensureDatabaseConnection } from "../database";
 
 dotenv.config();
 
@@ -22,12 +23,13 @@ export default class AuthService {
 
   static async register(email: string, password: string): Promise<any> {
     try {
+      await ensureDatabaseConnection();
       const existingUser = await db
         .select()
         .from(User)
         .where(eq(User.email, email))
-        .get();
-      if (existingUser) {
+        .execute();
+      if (existingUser.length > 0) {
         throw new Error("Email already in use");
       }
 
@@ -39,12 +41,16 @@ export default class AuthService {
           passwordHash: hashedPassword,
         })
         .returning()
-        .get();
+        .execute();
 
-      return newUser;
+      return newUser[0];
     } catch (error) {
-      console.error("Registration error:", error);
-      throw new Error("Registration failed");
+      console.error("Detailed registration error:", error);
+      if (error instanceof Error) {
+        throw new Error(`Registration failed: ${error.message}`);
+      } else {
+        throw new Error("Registration failed: Unknown error");
+      }
     }
   }
 
@@ -55,12 +61,13 @@ export default class AuthService {
     token: string;
     user: Partial<typeof User.$inferSelect>;
   } | null> {
-    const user = await db
+    const users = await db
       .select()
       .from(User)
       .where(eq(User.email, email))
-      .get();
-    if (!user) return null;
+      .execute();
+    if (users.length === 0) return null;
+    const user = users[0];
 
     try {
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
@@ -99,8 +106,13 @@ export default class AuthService {
     oldPassword: string,
     newPassword: string
   ): Promise<boolean> {
-    const user = await db.select().from(User).where(eq(User.id, userId)).get();
-    if (!user) return false;
+    const users = await db
+      .select()
+      .from(User)
+      .where(eq(User.id, userId))
+      .execute();
+    if (users.length === 0) return false;
+    const user = users[0];
 
     const isPasswordValid = await bcrypt.compare(
       oldPassword,
@@ -113,17 +125,18 @@ export default class AuthService {
       .update(User)
       .set({ passwordHash: newHashedPassword })
       .where(eq(User.id, userId))
-      .run();
+      .execute();
     return true;
   }
 
   static async resetPasswordRequest(email: string): Promise<void> {
-    const user = await db
+    const users = await db
       .select()
       .from(User)
       .where(eq(User.email, email))
-      .get();
-    if (!user) return;
+      .execute();
+    if (users.length === 0) return;
+    const user = users[0];
 
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
@@ -135,7 +148,7 @@ export default class AuthService {
         resetPasswordExpires: resetTokenExpiry,
       })
       .where(eq(User.id, user.id))
-      .run();
+      .execute();
 
     await sendPasswordResetEmail(email, resetToken);
   }
@@ -144,7 +157,7 @@ export default class AuthService {
     token: string,
     newPassword: string
   ): Promise<boolean> {
-    const user = await db
+    const users = await db
       .select()
       .from(User)
       .where(
@@ -153,9 +166,10 @@ export default class AuthService {
           gt(User.resetPasswordExpires, new Date())
         )
       )
-      .get();
+      .execute();
 
-    if (!user) return false;
+    if (users.length === 0) return false;
+    const user = users[0];
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await db
@@ -166,18 +180,19 @@ export default class AuthService {
         resetPasswordExpires: null,
       })
       .where(eq(User.id, user.id))
-      .run();
+      .execute();
 
     return true;
   }
 
   static async verifyEmail(token: string): Promise<boolean> {
-    const user = await db
+    const users = await db
       .select()
       .from(User)
       .where(eq(User.emailVerificationToken, token))
-      .get();
-    if (!user) return false;
+      .execute();
+    if (users.length === 0) return false;
+    const user = users[0];
 
     await db
       .update(User)
@@ -186,7 +201,7 @@ export default class AuthService {
         emailVerificationToken: null,
       })
       .where(eq(User.id, user.id))
-      .run();
+      .execute();
 
     return true;
   }
@@ -199,7 +214,7 @@ export default class AuthService {
       .update(User)
       .set({ refreshToken })
       .where(eq(User.id, userId))
-      .run();
+      .execute();
     return refreshToken;
   }
 
@@ -210,15 +225,16 @@ export default class AuthService {
       const decoded = jwt.verify(refreshToken, JWT_SECRET as string) as {
         id: number;
       };
-      const user = await db
+      const users = await db
         .select()
         .from(User)
         .where(
           and(eq(User.id, decoded.id), eq(User.refreshToken, refreshToken))
         )
-        .get();
+        .execute();
 
-      if (!user) return null;
+      if (users.length === 0) return null;
+      const user = users[0];
 
       const accessToken = jwt.sign(
         { id: user.id, email: user.email },

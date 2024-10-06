@@ -4,11 +4,16 @@ import { eq } from "drizzle-orm";
 
 export class ItemService {
   async getAllItems() {
-    return db.select().from(Item).all();
+    return db.select().from(Item).execute();
   }
 
   async getItem(id: number) {
-    return db.select().from(Item).where(eq(Item.id, id)).get();
+    const result = await db
+      .select()
+      .from(Item)
+      .where(eq(Item.id, id))
+      .execute();
+    return result[0] || null;
   }
 
   async createItem(itemData: Partial<typeof Item.$inferInsert>) {
@@ -26,18 +31,27 @@ export class ItemService {
       throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
     }
 
-    return db
+    const result = await db
       .insert(Item)
       .values(itemData as typeof Item.$inferInsert)
-      .returning();
+      .returning()
+      .execute();
+    return result[0];
   }
 
   async updateItem(id: number, updates: Partial<typeof Item.$inferInsert>) {
-    return db.update(Item).set(updates).where(eq(Item.id, id)).returning();
+    const result = await db
+      .update(Item)
+      .set(updates)
+      .where(eq(Item.id, id))
+      .returning()
+      .execute();
+    return result[0] || null;
   }
 
   async deleteItem(id: number) {
-    return db.delete(Item).where(eq(Item.id, id)).run();
+    await db.delete(Item).where(eq(Item.id, id)).execute();
+    return true;
   }
 }
 

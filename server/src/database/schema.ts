@@ -1,167 +1,147 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import {
+  pgTable,
+  serial,
+  text,
+  integer,
+  boolean,
+  timestamp,
+  decimal,
+  varchar,
+  pgSchema,
+} from "drizzle-orm/pg-core";
 import { relations, sql } from "drizzle-orm";
 
-export const User = sqliteTable("user", {
-  id: integer("id").primaryKey(),
+export const User = pgTable("user", {
+  id: serial("id").primaryKey(),
   passwordHash: text("password_hash").notNull(),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
-  role: text("role").notNull().default("user"),
-  email: text("email").notNull().unique(),
-  emailVerificationToken: text("email_verification_token"),
-  isEmailVerified: integer("is_email_verified", { mode: "boolean" })
-    .notNull()
-    .default(false),
-  resetPasswordToken: text("reset_password_token"),
-  resetPasswordExpires: integer("reset_password_expires", {
-    mode: "timestamp",
-  }),
+  firstName: varchar("first_name", { length: 255 }),
+  lastName: varchar("last_name", { length: 255 }),
+  isActive: boolean("is_active").notNull().default(true),
+  role: varchar("role", { length: 50 }).notNull().default("user"),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerificationToken: varchar("email_verification_token", { length: 255 }),
+  isEmailVerified: boolean("is_email_verified").notNull().default(false),
+  resetPasswordToken: varchar("reset_password_token", { length: 255 }),
+  resetPasswordExpires: timestamp("reset_password_expires"),
   refreshToken: text("refresh_token"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Modified items table
-export const Item = sqliteTable("item", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-  par: real("par").notNull(),
+export const Item = pgTable("item", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  par: decimal("par", { precision: 10, scale: 2 }).notNull(),
   unitOfMeasureId: integer("unit_of_measure_id").references(
     () => UnitOfMeasure.id
   ),
-  reorderPoint: real("reorder_point").notNull(),
-  // add vendors
+  reorderPoint: decimal("reorder_point", { precision: 10, scale: 2 }).notNull(),
   stockCheckFrequency: integer("stock_check_frequency").notNull(),
   description: text("description"),
   leadTime: integer("lead_time"),
   brands: text("brands"),
   notes: text("notes"),
-  currentCost: real("current_cost"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  currentCost: decimal("current_cost", { precision: 10, scale: 2 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const Command = sqliteTable("command", {
-  id: integer("id").primaryKey(),
+export const Command = pgTable("command", {
+  id: serial("id").primaryKey(),
   text: text("text").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// InventoryCount table
-export const InventoryCount = sqliteTable("inventory_count", {
-  id: integer("id").primaryKey(),
-  count: real("count").notNull(), // this is the count of the item
-  checkedAt: integer("checked_at", { mode: "timestamp" }), // this is the timestamp for when the item was checked off the shopping list
-  countedAt: integer("counted_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`), // this is the timestamp for when the item was counted
+export const InventoryCount = pgTable("inventory_count", {
+  id: serial("id").primaryKey(),
+  count: decimal("count", { precision: 10, scale: 2 }).notNull(),
+  checkedAt: timestamp("checked_at"),
+  countedAt: timestamp("counted_at").notNull().defaultNow(),
   itemId: integer("item_id")
     .notNull()
-    .references(() => Item.id, { onDelete: "cascade" }), // this is the id of the item that was counted
+    .references(() => Item.id, { onDelete: "cascade" }),
   userId: integer("user_id")
     .notNull()
-    .references(() => User.id), // this is the id of the user that performed the count
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .references(() => User.id),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const Vendor = sqliteTable("vendor", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-  pointOfContact: text("point_of_contact"),
-  website: text("website"),
+export const Vendor = pgTable("vendor", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  pointOfContact: varchar("point_of_contact", { length: 255 }),
+  website: varchar("website", { length: 255 }),
   notes: text("notes"),
   address: text("address"),
-  phone: text("phone"),
-  email: text("email"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// A receipt is a document that records the purchase of items from a vendor
-export const Receipt = sqliteTable("receipt", {
-  id: integer("id").primaryKey(),
+export const Receipt = pgTable("receipt", {
+  id: serial("id").primaryKey(),
   vendorId: integer("vendor_id").references(() => Vendor.id),
-  date: integer("date", { mode: "timestamp" }).notNull(),
-  totalAmount: real("total_amount").notNull(),
+  date: timestamp("date").notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("image_url"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// New table for tracking item costs over time
-export const ItemCost = sqliteTable("item_cost", {
-  id: integer("id").primaryKey(),
+export const ItemCost = pgTable("item_cost", {
+  id: serial("id").primaryKey(),
   itemId: integer("item_id").references(() => Item.id),
-  cost: real("cost").notNull(),
-  date: integer("date", { mode: "timestamp" }).notNull(),
+  cost: decimal("cost", { precision: 10, scale: 2 }).notNull(),
+  date: timestamp("date").notNull(),
   receiptId: integer("receipt_id").references(() => Receipt.id),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const UnitOfMeasure = sqliteTable("unit_of_measure", {
-  id: integer("id").primaryKey(),
-  name: text("name").notNull(),
-  abbreviation: text("abbreviation").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+export const UnitOfMeasure = pgTable("unit_of_measure", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  abbreviation: varchar("abbreviation", { length: 50 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Junction table to store item details for each receipt
-export const ReceiptItem = sqliteTable("receipt_item", {
-  id: integer("id").primaryKey(),
+export const chatThreads = pgTable("chat_threads", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id", { length: 255 }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  threadId: integer("thread_id")
+    .notNull()
+    .references(() => chatThreads.id),
+  content: text("content").notNull(),
+  role: varchar("role", { length: 50, enum: ["user", "assistant"] }).notNull(),
+  timestamp: timestamp("timestamp").notNull(),
+});
+
+export const ReceiptItem = pgTable("receipt_item", {
+  id: serial("id").primaryKey(),
   receiptId: integer("receipt_id").references(() => Receipt.id),
   itemId: integer("item_id").references(() => Item.id),
-  quantity: real("quantity").notNull(),
-  unitPrice: real("unit_price").notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: integer("updated_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// ItemVendors Junction Table
-export const ItemVendor = sqliteTable("item_vendor", {
-  id: integer("id").primaryKey(),
+export const ItemVendor = pgTable("item_vendor", {
+  id: serial("id").primaryKey(),
   itemId: integer("item_id").references(() => Item.id),
   vendorId: integer("vendor_id").references(() => Vendor.id),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// This is a relation to the receipts table
+/*============= RELATIONS =============*/
+
 export const VendorRelation = relations(Vendor, ({ many }) => ({
   receipts: many(Receipt),
   itemVendors: many(ItemVendor),
@@ -173,17 +153,29 @@ export const ReceiptRelation = relations(Receipt, ({ one, many }) => ({
     references: [Vendor.id],
   }),
   itemCosts: many(ItemCost),
+  receiptItems: many(ReceiptItem),
 }));
 
-export const ItemRelation = relations(Item, ({ many, one }) => ({
-  receiptItems: many(ReceiptItem),
+export const ItemRelations = relations(Item, ({ many, one }) => ({
+  itemCosts: many(ItemCost),
   inventoryCounts: many(InventoryCount),
+  receiptItems: many(ReceiptItem),
+  itemVendors: many(ItemVendor),
   unitOfMeasure: one(UnitOfMeasure, {
     fields: [Item.unitOfMeasureId],
     references: [UnitOfMeasure.id],
   }),
-  itemVendors: many(ItemVendor),
-  itemCosts: many(ItemCost),
+}));
+
+export const ItemCostRelations = relations(ItemCost, ({ one }) => ({
+  item: one(Item, {
+    fields: [ItemCost.itemId],
+    references: [Item.id],
+  }),
+  receipt: one(Receipt, {
+    fields: [ItemCost.receiptId],
+    references: [Receipt.id],
+  }),
 }));
 
 export const ReceiptItemRelation = relations(ReceiptItem, ({ one }) => ({

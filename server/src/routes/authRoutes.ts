@@ -9,7 +9,7 @@ const router = express.Router();
 // Handle user registration
 router.post("/register", AuthController.register);
 // POST /api/auth/register
-// Body: { "email": "user@example.com", "password": "password123", "name": "User Name" }
+// Body: { "email": "user@example.com", "password": "password123" }
 
 // Handle user login
 router.post("/login", AuthController.login);

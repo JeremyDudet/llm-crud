@@ -3,16 +3,6 @@ import { Request, Response } from "express";
 import UserService from "../services/UserService";
 
 export class UserController {
-  async createUser(req: Request, res: Response): Promise<void> {
-    try {
-      const { username, email, password } = req.body;
-      const user = await UserService.createUser(username, email, password);
-      res.status(201).json(user);
-    } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
-    }
-  }
-
   async getUser(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
@@ -40,12 +30,9 @@ export class UserController {
     try {
       const id = parseInt(req.params.id);
       const updates = req.body;
-      const [updateCount, updatedUsers] = await UserService.updateUser(
-        id,
-        updates
-      );
-      if (updateCount > 0) {
-        res.json(updatedUsers[0]);
+      const updatedUser = await UserService.updateUser(id, updates);
+      if (updatedUser) {
+        res.json(updatedUser);
       } else {
         res.status(404).json({ message: "User not found" });
       }
@@ -57,8 +44,8 @@ export class UserController {
   async deleteUser(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const deleteCount = await UserService.deleteUser(id);
-      if (deleteCount > 0) {
+      const result = await UserService.deleteUser(id);
+      if (result) {
         res.status(204).send();
       } else {
         res.status(404).json({ message: "User not found" });

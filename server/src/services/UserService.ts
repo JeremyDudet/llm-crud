@@ -1,34 +1,28 @@
 import { db } from "../database";
 import { User } from "../database/schema";
 import { eq } from "drizzle-orm";
-import bcrypt from "bcrypt";
 
 export class UserService {
-  async createUser(email: string, password: string): Promise<any> {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    return db
-      .insert(User)
-      .values({
-        email,
-        passwordHash: hashedPassword,
-      })
-      .returning();
-  }
-
   async getUser(id: number) {
-    return db.select().from(User).where(eq(User.id, id)).get();
+    const result = await db
+      .select()
+      .from(User)
+      .where(eq(User.id, id))
+      .execute();
+    return result[0] || null;
   }
 
   async getAllUsers() {
-    return db.select().from(User).all();
+    return db.select().from(User).execute();
   }
 
   async updateUser(id: number, updates: Partial<typeof User.$inferInsert>) {
-    return db.update(User).set(updates).where(eq(User.id, id)).run();
+    await db.update(User).set(updates).where(eq(User.id, id)).execute();
+    return this.getUser(id);
   }
 
   async deleteUser(id: number) {
-    return db.delete(User).where(eq(User.id, id)).run();
+    return db.delete(User).where(eq(User.id, id)).execute();
   }
 }
 

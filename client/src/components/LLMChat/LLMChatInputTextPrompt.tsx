@@ -47,7 +47,7 @@ function FooterInputTextPrompt({
         <Button
           variant="outline"
           size="icon"
-          className="absolute right-2 bottom-0 p-1 bg-transparent text-gray-800 hover:bg-slate-100"
+          className="absolute right-0 bottom-0 p-1 bg-transparent text-gray-800 hover:bg-slate-100"
           onClick={handleTranscribeAudio}
           disabled={isProcessingTranscription}
         >

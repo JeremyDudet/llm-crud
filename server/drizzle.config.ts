@@ -1,11 +1,16 @@
 import { defineConfig } from "drizzle-kit";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const connectionString = `postgres://${process.env.POSTGRES_USER}:${process.env.POSTGRES_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.POSTGRES_DB}`;
 
 export default defineConfig({
-  dialect: "sqlite",
   schema: "./src/database/schema.ts",
-  out: "./drizzle",
+  dialect: "postgresql",
   dbCredentials: {
-    url: "./sqlite.db",
+    url: connectionString,
   },
+  verbose: true,
   strict: true,
 });

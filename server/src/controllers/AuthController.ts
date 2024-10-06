@@ -11,7 +11,7 @@ interface AuthRequest extends Request {
 
 export class AuthController {
   async register(req: Request, res: Response): Promise<void> {
-    const { email, password } = req.body;
+    const { email, password }: { email: string; password: string } = req.body;
     try {
       const user = await AuthService.register(email, password);
       if (user) {
@@ -23,22 +23,18 @@ export class AuthController {
           },
         });
       } else {
-        res.status(400).json({ message: "Registration failed" });
+        res
+          .status(400)
+          .json({ message: "Registration failed: User not created" });
       }
     } catch (error) {
+      console.error("Registration error in controller:", error);
       if (error instanceof Error) {
-        if (error.message === "Email already in use") {
-          res.status(409).json({ message: "Email already in use" });
-        } else {
-          res
-            .status(400)
-            .json({ message: "Registration failed", error: error.message });
-        }
+        res.status(400).json({ message: error.message });
       } else {
-        res.status(400).json({
-          message: "Registration failed",
-          error: "An unknown error occurred",
-        });
+        res
+          .status(400)
+          .json({ message: "An unknown error occurred during registration" });
       }
     }
   }
@@ -159,15 +155,18 @@ export class AuthController {
     }
 
     try {
-      const user = await db
+      const users = await db
         .select()
         .from(User)
         .where(eq(User.id, req.user.id))
-        .get();
-      if (!user) {
+        .execute();
+
+      if (users.length === 0) {
         res.status(404).json({ message: "User not found" });
         return;
       }
+
+      const user = users[0];
 
       res.json({
         id: user.id,

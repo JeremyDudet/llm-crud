@@ -1,7 +1,7 @@
 // routes/AppRouter.tsx
 // Function: Define main routing configuration.
 // Expected Output: Router component with route definitions.
-
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "../pages/LandingPage";
 import Login from "../pages/Login";
 import Profile from "../pages/Profile";
@@ -12,7 +12,7 @@ import Dashboard from "../pages/Dashboard";
 import Library from "../pages/Library";
 import Analytics from "../pages/Analytics";
 import ForgotPassword from "../pages/ForgotPassword";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import ChatThread from "@/pages/ChatThread";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +40,14 @@ const router = createBrowserRouter([
     element: (
       <PrivateRoute>
         <Dashboard />
+      </PrivateRoute>
+    ),
+  },
+  {
+    path: "/chat/:threadId",
+    element: (
+      <PrivateRoute>
+        <ChatThread />
       </PrivateRoute>
     ),
   },

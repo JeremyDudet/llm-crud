@@ -25,8 +25,13 @@ const CreateAccount: React.FC = () => {
       navigate("/login");
     },
     onError: (error: AxiosError) => {
-      if (error.response && error.response.status === 409) {
-        setError("Email already in use");
+      if (error.response) {
+        setError(
+          (error.response.data as { message?: string }).message ||
+            "An error occurred during registration."
+        );
+      } else if (error.request) {
+        setError("No response received from the server. Please try again.");
       } else {
         setError(error.message || "An error occurred during registration.");
       }

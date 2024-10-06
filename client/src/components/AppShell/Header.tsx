@@ -61,7 +61,7 @@ export default function Header() {
       <div className="mx-auto max-w-3xl w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 justify-between">
           <div className="flex">
-            <Link to="/" className="flex flex-shrink-0 items-center">
+            <Link to="/dashboard" className="flex flex-shrink-0 items-center">
               <h1 className="font-bold">LLM CHAT</h1>
             </Link>
             <div className="hidden sm:-my-px sm:ml-6 sm:flex sm:space-x-8">

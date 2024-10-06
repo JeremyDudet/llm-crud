@@ -2,10 +2,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useMicVAD } from "@ricky0123/vad-react";
 import apiClient from "@/api/apiClient";
+import { AppDispatch } from "@/store";
 import { useDispatch } from "react-redux";
+import { createNewThread } from "@/features/ChatThread/ChatThreadSlice";
+import { useNavigate } from "react-router-dom";
 import { addCommand } from "@/features/commandStackSlice";
 import { Button } from "@/components/ui/button";
-import { Send, AudioLines } from "lucide-react";
+import { Send, AudioLines, Paperclip } from "lucide-react";
 import LLMChatInputTextPrompt from "./LLMChatInputTextPrompt";
 
 // Type declarations (unchanged)
@@ -29,25 +32,27 @@ declare global {
   }
 }
 
-export default function Footer() {
+export default function PropmtInput() {
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const [isProcessing] = useState(false);
   const [isVADReady, setIsVADReady] = useState(false);
   const [isVADLoading, setIsVADLoading] = useState(true);
   const [isVADActive, setIsVADActive] = useState(false);
-  const dispatch = useDispatch();
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingTranscription, setIsProcessingTranscription] =
     useState(false);
   const [isVADSpeechDetected, setIsVADSpeechDetected] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const handleFocus = () => setIsFocused(true);
   const handleBlur = () => setIsFocused(false);
 
@@ -106,23 +111,23 @@ export default function Footer() {
   const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB in bytes
   const MIN_AUDIO_SIZE = 512; // Minimum size of 0.5KB
 
-  const sendCommandToBackend = useCallback(
-    async (command: string) => {
-      setIsProcessing(true);
-      try {
-        const response = await apiClient.post("/api/process-text-command", {
-          command,
-        });
-        console.log("Command processed:", response.data);
-      } catch (error) {
-        console.error("Error sending command to backend:", error);
-        setError("Failed to process command. Please try again.");
-      } finally {
-        setIsProcessing(false);
-      }
-    },
-    [setIsProcessing, setError]
-  );
+  // const sendCommandToBackend = useCallback(
+  //   async (command: string) => {
+  //     setIsProcessing(true);
+  //     try {
+  //       const response = await apiClient.post("/api/process-text-command", {
+  //         command,
+  //       });
+  //       console.log("Command processed:", response.data);
+  //     } catch (error) {
+  //       console.error("Error sending command to backend:", error);
+  //       setError("Failed to process command. Please try again.");
+  //     } finally {
+  //       setIsProcessing(false);
+  //     }
+  //   },
+  //   [setIsProcessing, setError]
+  // );
 
   const processVoiceCommand = useCallback(
     async (audioBlob: Blob) => {
@@ -310,10 +315,17 @@ export default function Footer() {
     if (textareaRef.current) {
       const command = inputValue;
       if (command) {
-        sendCommandToBackend(command);
+        dispatch(createNewThread(command))
+          .unwrap()
+          .then((result) => {
+            navigate(`/chat/${result.id}`);
+          })
+          .catch(() => {
+            setError("Failed to create new thread. Please try again.");
+          });
       }
     }
-  }, [sendCommandToBackend, inputValue]);
+  }, [dispatch, navigate, inputValue]);
 
   const handleTranscribeAudio = useCallback(() => {
     if (isRecording) {
@@ -378,11 +390,11 @@ export default function Footer() {
 
   return (
     <div
-      className={`grid max-w-3xl mx-auto w-full px-4 pt-4 pb-2 bg-gray-200 border rounded-md ${
+      className={`grid grid-rows-[auto,auto] gap-2 max-w-3xl mx-auto w-full px-4 pt-4 pb-2 bg-gray-100 border rounded-md ${
         isFocused ? "border-blue-500" : "border-gray-300"
       } transition-colors duration-200`}
     >
-      <div>
+      <div className="w-full border-b border-gray-200 pb-2">
         <LLMChatInputTextPrompt
           textareaRef={textareaRef}
           inputValue={inputValue}
@@ -394,39 +406,51 @@ export default function Footer() {
           onFocus={handleFocus}
           onBlur={handleBlur}
         />
-        {inputValue ? (
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0"
-            onClick={handleSendTextCommand}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+      </div>
+      <div className="flex justify-between items-center pt-2">
+        <div className="flex space-x-2">
+          {/* Add media button placeholder */}
+          <Button variant="ghost" className="shrink-0">
+            <Paperclip className="mr-2 h-4 w-4" />
+            Attach
           </Button>
-        ) : (
-          <Button
-            variant="outline"
-            size="icon"
-            className={`shrink-0 ${
-              isVADActive
-                ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
-                : ""
-            } ${vad.userSpeaking ? "animate-pulse" : ""}`}
-            onClick={handleHeadphonesClick}
-            disabled={!isVADReady}
-          >
-            {isVADLoading ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <AudioLines className="h-4 w-4" />
-            )}
-          </Button>
-        )}
+          {/* Additional buttons can be added here */}
+        </div>
+        <div>
+          {inputValue ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              onClick={handleSendTextCommand}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <Send className="h-5 w-5" />
+              )}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="icon"
+              className={`shrink-0 ${
+                isVADActive
+                  ? "bg-red-400 text-white hover:bg-red-500 hover:text-white"
+                  : ""
+              } ${vad.userSpeaking ? "animate-pulse" : ""}`}
+              onClick={handleHeadphonesClick}
+              disabled={!isVADReady}
+            >
+              {isVADLoading ? (
+                <span className="loading loading-spinner loading-xs"></span>
+              ) : (
+                <AudioLines className="h-5 w-5" />
+              )}
+            </Button>
+          )}
+        </div>
       </div>
       {isTranscribing && (
         <div className="text-sm text-gray-500 mt-2">Transcribing audio...</div>

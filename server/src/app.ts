@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import helmet from "helmet";
 import morgan from "morgan";
 import { db } from "./database";
+import { sql } from "drizzle-orm";
 import { User } from "./database/schema";
 import userRoutes from "./routes/users";
 import authRoutes from "./routes/authRoutes";
@@ -11,11 +12,13 @@ import processCommandRoutes from "./routes/processCommandRoutes";
 import transcribeAudioRoutes from "./routes/transcribeAudioRoutes";
 import processTextCommandRoutes from "./routes/processTextCommandRoutes";
 import itemRoutes from "./routes/items";
+import chatRoutes from "./routes/chatThreadRoutes";
+import { initializeDatabase } from "./database";
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT);
 
 // Middleware
 app.use(
@@ -29,14 +32,36 @@ app.use(helmet());
 app.use(morgan("dev"));
 
 // Database connection check
-db.select()
-  .from(User)
-  .limit(1)
+initializeDatabase()
   .then(() => {
-    console.log("Database connected successfully");
+    // Start the server
+    const server = app
+      .listen(port, () => {
+        console.log(`Server is running on http://localhost:${port}`);
+      })
+      .on("error", (e: NodeJS.ErrnoException) => {
+        if (e.code === "EADDRINUSE") {
+          console.log(
+            `Port ${port} is already in use. Trying port ${port + 1}`
+          );
+          app.listen(port + 1, () => {
+            console.log(`Server is running on http://localhost:${port + 1}`);
+          });
+        } else {
+          console.error("Failed to start server:", e);
+        }
+      });
+
+    // Graceful shutdown
+    process.on("SIGTERM", () => {
+      console.log("SIGTERM signal received: closing HTTP server");
+      server.close(() => {
+        console.log("HTTP server closed");
+      });
+    });
   })
   .catch((error) => {
-    console.error("Database connection failed:", error);
+    console.error("Failed to initialize database:", error);
     process.exit(1);
   });
 
@@ -47,6 +72,7 @@ app.use("/api/process-command", processCommandRoutes);
 app.use("/api/transcribe-audio", transcribeAudioRoutes);
 app.use("/api/process-text-command", processTextCommandRoutes);
 app.use("/api/items", itemRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Basic route for testing
 app.get("/", (req, res) => {
