@@ -76,7 +76,7 @@ app.use("/api/transcribe-audio", transcribeAudioRoutes);
 app.use("/api/process-text-command", processTextCommandRoutes);
 app.use("/api/items", itemRoutes);
 app.use("/api/chat", chatRoutes);
-app.use("/api/create-checkout-session", paymentRoutes);
+app.use("/create-checkout-session", paymentRoutes);
 
 // Basic route for testing
 app.get("/", (req, res) => {
