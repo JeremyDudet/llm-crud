@@ -17,16 +17,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SERVER_SSH_KEY }}
           HOST: ${{ secrets.SERVER_IP }}
           USER: ${{ secrets.SERVER_USER }}
-          # DB_HOST: ${{ secrets.DB_HOST }}
-          # DB_PORT: ${{ secrets.DB_PORT  }}
-          # POSTGRES_USER: ${{ secrets.POSTGRES_USER  }}
-          # POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD  }}
-          # POSTGRES_DB: ${{ secrets.POSTGRES_DB  }}
-          # DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          # JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          # OPENAI_API_KEYS: ${{ secrets.OPENAI_API_KEYS }}
-          # PROD_CLIENT_URL: ${{ secrets.PROD_CLIENT_URL }}
-          # STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
 
         run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
